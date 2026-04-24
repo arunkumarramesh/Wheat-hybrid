@@ -542,59 +542,26 @@ with open(in_gtf) as fin, open(out_gtf, "w") as fout:
 ```
 split_bed_par.py
 ```
-sizes_file = "Paragon_part_chr_sizes.txt"
-in_gtf = "Triticum_aestivum_paragon.GCA949126075v1.62.gtf"
-out_gtf = "Triticum_aestivum_paragon.GCA949126075v1.62_part.gtf"
-
-chrom_sizes = {}
-with open(sizes_file) as f:
+chrom_sizes={}
+with open("Paragon_part_chr_sizes.txt") as f:
     for line in f:
-        chrom, size = line.strip().split("\t")[:2]
-        base = chrom.replace("_part1", "").replace("_part2", "")
-        chrom_sizes.setdefault(base, [None, None])
-        if chrom.endswith("_part1"):
-            chrom_sizes[base][0] = int(size)
-        elif chrom.endswith("_part2"):
-            chrom_sizes[base][1] = int(size)
-
-def with_split_attr(attr_str, tag):
-    s = attr_str.rstrip()
-    if not s.endswith(";"):
-        s += ";"
-    return s + f' split "{tag}";'
-
-with open(in_gtf) as fin, open(out_gtf, "w") as fout:
-    for line in fin:
-        if line.startswith("#") or not line.strip():
-            fout.write(line)
-            continue
-        cols = line.rstrip("\n").split("\t")
-        chrom = cols[0]
-        start = int(cols[3])
-        end = int(cols[4])
-        part1_size = chrom_sizes[chrom][0]
-
-        if end <= part1_size:
-            cols[0] = f"{chrom}_part1"
-            fout.write("\t".join(cols) + "\n")
-        elif start > part1_size:
-            cols[0] = f"{chrom}_part2"
-            cols[3] = str(start - part1_size)
-            cols[4] = str(end - part1_size)
-            fout.write("\t".join(cols) + "\n")
+        chrom,size=line.strip().split("\t")
+        base=chrom.replace("_part1","").replace("_part2","")
+        chrom_sizes.setdefault(base,[0,0])
+        if "part1" in chrom:
+            chrom_sizes[base][0]=int(size)
         else:
-            left = cols.copy()
-            left[0] = f"{chrom}_part1"
-            left[4] = str(part1_size)
-            left[8] = with_split_attr(left[8], "left")
-            fout.write("\t".join(left) + "\n")
+            chrom_sizes[base][1]=int(size)
 
-            right = cols.copy()
-            right[0] = f"{chrom}_part2"
-            right[3] = "1"
-            right[4] = str(end - part1_size)
-            right[8] = with_split_attr(right[8], "right")
-            fout.write("\t".join(right) + "\n")
+with open("Triticum_aestivum_paragon.GCA949126075v1.62_exon.bed") as f,open("Triticum_aestivum_paragon.GCA949126075v1.62_exon_part.bed","w") as out:
+    for line in f:
+        chrom,start,end=line.strip().split()
+        start=int(start);end=int(end)
+        part1_size=chrom_sizes[chrom][0]
+        if start<part1_size:
+            out.write(f"{chrom}_part1\t{start}\t{end}\n")
+        else:
+            out.write(f"{chrom}_part2\t{start-part1_size}\t{end-part1_size}\n")
 ```
 10. Identify heterozygous sites
 ```
