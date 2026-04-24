@@ -59,15 +59,15 @@ python3 /software/OrthoFinder-2.5.5/orthofinder.py -f orthofinder_input_2_D/ -t 
 cd /projects/wheat/orthofinder_input_2_A/OrthoFinder/Results_Jul05_1/Orthogroups
 awk 'NR==FNR{keep[$1]; next} ($1 in keep)' Orthogroups_SingleCopyOrthologues.txt Orthogroups.tsv > SingleCopyOrthologues_matrix_A.tsv
 
-cd /projects/wheat/orthofinder_input_2_B/OrthoFinder/Results_Jul05_1/Orthogroups
+cd /projects/wheat/orthofinder_input_2_B/OrthoFinder/Results_Apr24/Orthogroups
 awk 'NR==FNR{keep[$1]; next} ($1 in keep)' Orthogroups_SingleCopyOrthologues.txt Orthogroups.tsv > SingleCopyOrthologues_matrix_B.tsv
 
-cd /projects/wheat/orthofinder_input_2_D/OrthoFinder/Results_Jul05_1/Orthogroups
+cd /projects/wheat/orthofinder_input_2_D/OrthoFinder/Results_Apr24/Orthogroups
 awk 'NR==FNR{keep[$1]; next} ($1 in keep)' Orthogroups_SingleCopyOrthologues.txt Orthogroups.tsv > SingleCopyOrthologues_matrix_D.tsv
 
 cp /projects/wheat/orthofinder_input_2_A/OrthoFinder/Results_Jul05_1/Orthogroups/SingleCopyOrthologues_matrix_A.tsv .
-cp /projects/wheat/orthofinder_input_2_B/OrthoFinder/Results_Jul05_1/Orthogroups/SingleCopyOrthologues_matrix_B.tsv .
-cp /projects/wheat/orthofinder_input_2_D/OrthoFinder/Results_Jul05_1/Orthogroups/SingleCopyOrthologues_matrix_D.tsv .
+cp /projects/wheat/orthofinder_input_2_B/OrthoFinder/Results_Apr24/Orthogroups/SingleCopyOrthologues_matrix_B.tsv .
+cp /projects/wheat/orthofinder_input_2_D/OrthoFinder/Results_Apr24/Orthogroups/SingleCopyOrthologues_matrix_D.tsv .
 cat SingleCopyOrthologues_matrix_A.tsv SingleCopyOrthologues_matrix_B.tsv SingleCopyOrthologues_matrix_D.tsv > SingleCopyOrthologues_matrix.tsv
 
 ```
