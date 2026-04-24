@@ -15,8 +15,8 @@ cat iwgsc_refseqv2.1_annotation_200916_LC_pep.fasta iwgsc_refseqv2.1_annotation_
 ```
 3. Map reads to transcriptome references
 ```
-#/proj/popgen/a.ramesh/software/kallisto/build/src/kallisto index -i iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_index -t 20 iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna.fasta
-#/proj/popgen/a.ramesh/software/kallisto/build/src/kallisto index -i Triticum_aestivum_paragon.GCA949126075v1.cdna.all_index -t 20 Triticum_aestivum_paragon.GCA949126075v1.cdna.all.fa
+#/software/kallisto/build/src/kallisto index -i iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_index -t 20 iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna.fasta
+#/software/kallisto/build/src/kallisto index -i Triticum_aestivum_paragon.GCA949126075v1.cdna.all_index -t 20 Triticum_aestivum_paragon.GCA949126075v1.cdna.all.fa
 
 grep '>' iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna.fasta | cut -d ' ' -f 1 | sed 's/>//' >transnames
 sed 's/\..*//g' transnames | paste -d ',' transnames - >transcript_to_gene_refseqv2.1.csv
@@ -595,9 +595,9 @@ with open(in_gtf) as fin, open(out_gtf, "w") as fout:
             right[8] = with_split_attr(right[8], "right")
             fout.write("\t".join(right) + "\n")
 ```
-10. Identify heterzygous sites
+10. Identify heterozygous sites
 ```
-/software/bcftools-1.16/bcftools view  -R iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o wheat_ase_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
+
 /software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o wheat_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
 /software/htslib-1.16/tabix -p vcf wheat_het_snps_filtered.vcf.gz
 gunzip wheat_het_snps_filtered.vcf.gz
@@ -606,7 +606,6 @@ gunzip wheat_het_snps_filtered.vcf.gz
 /software/htslib-1.16/bgzip wheat_ase_snps_het.recode.vcf
 /software/htslib-1.16/tabix wheat_ase_snps_het.recode.vcf.gz
 
-/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o par_ase_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
 /software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
 /software/htslib-1.16/tabix -p vcf par_het_snps_filtered.vcf.gz
 gunzip par_het_snps_filtered.vcf.gz
@@ -616,7 +615,222 @@ gunzip par_het_snps_filtered.vcf.gz
 /software/htslib-1.16/tabix par_ase_snps_het.recode.vcf.gz
 ```
 
-11. Profile ASE
+11. Only keep sites that are not heterozygous in parents and are biallelic. Also do PCA for SNPs.
+```
+library(vcfR)
+library(factoextra)
+library(pheatmap)
+library(Polychrome)
+
+datum <- read.vcfR(file="wheat_sites_merged_cs.vcf")
+datum <- as.data.frame(extract.gt(datum))
+colnames(datum) <- gsub("PXCS2","PxCS2", gsub(".sort.cs.bam","", gsub("_.*","", colnames(datum))))
+chrids_datum <- rownames(datum)
+datum[datum == "0/0"] <- 0
+datum[datum == "0|0"] <- 0
+datum[datum == "0/1"] <- 1
+datum[datum == "0|1"] <- 1
+datum[datum == "1|0"] <- 1
+datum[datum == "0/2"] <- 9
+datum[datum == "0|2"] <- 9
+datum[datum == "0/3"] <- 9
+datum[datum == "0|3"] <- 9
+datum[datum == "1/2"] <- 9
+datum[datum == "1|2"] <- 9
+datum[datum == "1/3"] <- 9
+datum[datum == "1|3"] <- 9
+datum[datum == "2/3"] <- 9
+datum[datum == "2|3"] <- 9
+datum[datum == "1/1"] <- 2
+datum[datum == "1|1"] <- 2
+datum[datum == "2/2"] <- 9
+datum[datum == "2|2"] <- 9
+datum <- as.data.frame(apply(datum,2,as.numeric))
+rownames(datum) <- chrids_datum
+datum <- datum[complete.cases(datum),]
+datum <- datum %>%
+  mutate(across(everything(), ~ replace(.x, !(.x %in% 0:2), NA_real_)))
+datum <- datum[complete.cases(datum),]
+datum <- datum[apply(datum,1,sd) > 0,]
+pca <- prcomp(t(datum), scale. = TRUE) ## do pca
+## plot of pca with groups in ellipses
+CSpca <- fviz_pca_ind(pca,
+                      col.ind = c(rep("CS",3),rep("CSxP",3),rep("P",3),rep("CSxP",3)), # color by groups
+                      palette = c("#0072B2", "#E69F00", "#CC79A7"),
+                      legend.title = "Genotypes",
+                      repel = TRUE,
+                      pointshape = 16,                                  # filled circles
+                      pointsize  = 3,
+                      mean.point = FALSE, 
+                      title = ""
+) + guides(color = guide_legend(override.aes = list(shape = 16, size = 3)))
+
+pdf("SNPs_PCA_first_pass.pdf",height=3.5,width=4.5)
+CSpca
+dev.off()
+
+datum <- read.vcfR(file="wheat_ase_het_snps_filtered.vcf")
+datum <- as.data.frame(extract.gt(datum))
+colnames(datum) <- gsub("PXCS2","PxCS2", gsub(".sort.cs.bam","", gsub("_.*","", colnames(datum))))
+chrids_datum <- rownames(datum)
+datum[datum == "0/0"] <- 0
+datum[datum == "0|0"] <- 0
+datum[datum == "0/1"] <- 1
+datum[datum == "0|1"] <- 1
+datum[datum == "1|0"] <- 1
+datum[datum == "0/2"] <- 9
+datum[datum == "0|2"] <- 9
+datum[datum == "0/3"] <- 9
+datum[datum == "0|3"] <- 9
+datum[datum == "1/2"] <- 9
+datum[datum == "1|2"] <- 9
+datum[datum == "1/3"] <- 9
+datum[datum == "1|3"] <- 9
+datum[datum == "2/3"] <- 9
+datum[datum == "2|3"] <- 9
+datum[datum == "1/1"] <- 2
+datum[datum == "1|1"] <- 2
+datum[datum == "2/2"] <- 9
+datum[datum == "2|2"] <- 9
+datum <- as.data.frame(apply(datum,2,as.numeric))
+rownames(datum) <- chrids_datum
+datum <- datum[complete.cases(datum),]
+filtered_list <- datum[rowSums(datum[1:3]) < 1,]
+filtered_list <- filtered_list[rowSums(filtered_list[7:9]) == 6,]
+A <- intersect(c("CS1","CS2","CS3","P1","P2","P3"), names(datum))
+B <- intersect(c("CSxP1","CSxP2","CSxP3","PxCS1","PxCS2"), names(datum))
+filtered_list <- filtered_list %>%
+  dplyr::filter(
+    !if_any(all_of(A), ~ .x %in% c(1, 9)),     # no 1 or 9 in A
+    !if_any(all_of(B), ~ .x == 9),             # no 9 in B
+  )
+filtered_list <- as.data.frame(rownames(filtered_list))
+filtered_list$`rownames(filtered_list)` <- gsub("ChrUnknown","Chr_Unknown",filtered_list$`rownames(filtered_list)`)
+filtered_list <- filtered_list %>%
+  tidyr::extract(`rownames(filtered_list)`,
+                 into = c("chr", "position"),
+                 regex = '^([^_]+_[^_]+)_(.+)$',
+                 remove = FALSE, convert = TRUE)
+filtered_list$chr <- gsub("Chr_Unknown","ChrUnknown",filtered_list$chr)
+write.table(filtered_list[2:3],"filtered_set_CS.txt",row.names = F, col.names = F, quote = F)
+
+datum <- datum %>%
+  mutate(across(everything(), ~ replace(.x, !(.x %in% 0:2), NA_real_)))
+datum <- datum[complete.cases(datum),]
+datum <- datum[apply(datum,1,sd) > 0,]
+pca <- prcomp(t(datum), scale. = TRUE) ## do pca
+## plot of pca with groups in ellipses
+CSpca <- fviz_pca_ind(pca,
+                      col.ind = c(rep("CS",3),rep("CSxP",3),rep("P",3),rep("CSxP",2)), # color by groups
+                      palette = c("#0072B2", "#E69F00", "#CC79A7"),
+                      legend.title = "Genotypes",
+                      repel = TRUE,
+                      pointshape = 16,                                  # filled circles
+                      pointsize  = 3,
+                      mean.point = FALSE, 
+                      title = paste("n=",nrow(datum)," sites",sep="")
+) + guides(color = guide_legend(override.aes = list(shape = 16, size = 3)))
+
+pdf("SNPs_PCA.pdf",height=3.5,width=4.5)
+CSpca
+dev.off()
+
+csscree <- fviz_screeplot(pca, ncp=10,title = "")
+csscree
+
+## now with PAR reference
+
+datum <- read.vcfR(file="par_ase_het_snps_filtered.vcf")
+datum <- as.data.frame(extract.gt(datum))
+colnames(datum) <- gsub("PXCS2","PxCS2", gsub(".sort.cs.bam","", gsub("_.*","", colnames(datum))))
+chrids_datum <- rownames(datum)
+
+datum[datum == "0/0"] <- 0
+datum[datum == "0|0"] <- 0
+datum[datum == "0/1"] <- 1
+datum[datum == "0|1"] <- 1
+datum[datum == "1|0"] <- 1
+datum[datum == "0/2"] <- 9
+datum[datum == "0|2"] <- 9
+datum[datum == "0/3"] <- 9
+datum[datum == "0|3"] <- 9
+datum[datum == "1/2"] <- 9
+datum[datum == "1|2"] <- 9
+datum[datum == "1/3"] <- 9
+datum[datum == "1|3"] <- 9
+datum[datum == "2/3"] <- 9
+datum[datum == "2|3"] <- 9
+datum[datum == "1/1"] <- 2
+datum[datum == "1|1"] <- 2
+datum[datum == "2/2"] <- 9
+datum[datum == "2|2"] <- 9
+datum <- as.data.frame(apply(datum,2,as.numeric))
+rownames(datum) <- chrids_datum
+
+datum <- datum[complete.cases(datum),]
+filtered_list <- datum[rowSums(datum[1:3]) == 6,]
+filtered_list <- filtered_list[rowSums(filtered_list[7:9]) < 1,]
+A <- intersect(c("CS1","CS2","CS3","P1","P2","P3"), names(datum))
+B <- intersect(c("CSxP1","CSxP2","CSxP3","PxCS1","PxCS2"), names(datum))
+filtered_list <- filtered_list %>%
+  dplyr::filter(
+    !if_any(all_of(A), ~ .x %in% c(1, 9)),     # no 1 or 9 in A
+    !if_any(all_of(B), ~ .x == 9),             # no 9 in B
+  )
+
+filtered_list <- as.data.frame(rownames(filtered_list))
+filtered_list <- filtered_list %>%
+  tidyr::extract(`rownames(filtered_list)`,
+                 into = c("chr", "position"),
+                 regex = '^([^_]+_[^_]+)_(.+)$',   # grab 1st_two_fields and the rest
+                 remove = FALSE, convert = TRUE)
+
+write.table(filtered_list[2:3],"filtered_set_PAR.txt",row.names = F, col.names = F, quote = F)
+
+datum <- datum %>%
+  mutate(across(everything(), ~ replace(.x, !(.x %in% 0:2), NA_real_)))
+datum <- datum[complete.cases(datum),]
+datum <- datum[apply(datum,1,sd) > 0,]
+pca <- prcomp(t(datum), scale. = TRUE) ## do pca
+## plot of pca with groups in ellipses
+PARpca <- fviz_pca_ind(pca,
+                      col.ind = c(rep("CS",3),rep("CSxP",3),rep("P",3),rep("CSxP",2)), # color by groups
+                      palette = c("#0072B2", "#E69F00", "#CC79A7"),
+                      legend.title = "Genotypes",
+                      repel = TRUE,
+                      pointshape = 16,                                  # filled circles
+                      pointsize  = 3,
+                      mean.point = FALSE, 
+                      title = paste("n=",nrow(datum)," sites",sep="")
+) + guides(color = guide_legend(override.aes = list(shape = 16, size = 3)))
+
+pdf("SNPs_PCA_PAR.pdf",height=3.5,width=4.5)
+PARpca
+dev.off()
+
+csscree <- fviz_screeplot(pca, ncp=10,title = "")
+csscree
+```
+
+11. Generate mapped files using WASP for ASE
+```
+/software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --runMode genomeGenerate  --genomeDir star_index --genomeFastaFiles iwgsc_refseqv2.1_part.fa  --sjdbGTFfile iwgsc_refseqv2.1_annotation_200916_HC_unknown_part.gtf --sjdbOverhang 100 --limitGenomeGenerateRAM 48889586954
+
+for file in *_1.paired.fq.gz; do /software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --genomeDir star_index --readFilesIn $file ${file/_1.paired.fq.gz/_2.paired.fq.gz} --readFilesCommand zcat  --varVCFfile wheat_het_snps_filtered.vcf  --waspOutputMode SAMtag  --outSAMtype BAM SortedByCoordinate  --outFilterMultimapNmax 1  --outSAMattrRGline ID:$file SM:$file PL:ILLUMINA LB:lib1 PU:unit1 --outSAMattributes NH HI AS nM NM MD jM jI rB MC vA vG vW  --outFileNamePrefix ${file/_1.paired.fq.gz/} ; done
+for file in *Aligned.sortedByCoord.out.bam; do samtools view -@ 10 -h $file | awk 'BEGIN{OFS="\t"} /^@/{print;next} {vw=""; for(i=12;i<=NF;i++) if($i~/^vW:i:/){split($i,a,":"); vw=a[3]; break} if(vw=="" || vw==1) print}' | samtools sort -@ 8 -o ${file/Aligned.sortedByCoord.out.bam/.wasp.bam} ; done
+for file in *.wasp.bam ; do java -jar /software/picard.jar  MarkDuplicates -I $file -O ${file/.wasp.bam/.ase.bam} -M ${file/.wasp.bam/_metrics.ase.txt}; done
+for file in *.ase.bam ; do java -jar /software/picard.jar BuildBamIndex -I $file; done
+
+/software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --runMode genomeGenerate  --genomeDir star_index_par --genomeFastaFiles Paragon_part.fa  --sjdbGTFfile Triticum_aestivum_paragon.GCA949126075v1.62_scaf_part.gtf --sjdbOverhang 100 --limitGenomeGenerateRAM 48889586954
+
+for file in *_1.paired.fq.gz; do /software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --genomeDir star_index_par --readFilesIn $file ${file/_1.paired.fq.gz/_2.paired.fq.gz} --readFilesCommand zcat  --varVCFfile par_het_snps_filtered.vcf  --waspOutputMode SAMtag  --outSAMtype BAM SortedByCoordinate  --outFilterMultimapNmax 1  --outSAMattrRGline ID:$file SM:$file PL:ILLUMINA LB:lib1 PU:unit1 --outSAMattributes NH HI AS nM NM MD jM jI rB MC vA vG vW  --outFileNamePrefix ${file/_1.paired.fq.gz/} ; done
+for file in *Aligned.sortedByCoord.out.bam; do samtools view -@ 10 -h $file | awk 'BEGIN{OFS="\t"} /^@/{print;next} {vw=""; for(i=12;i<=NF;i++) if($i~/^vW:i:/){split($i,a,":"); vw=a[3]; break} if(vw=="" || vw==1) print}' | samtools sort -@ 8 -o ${file/Aligned.sortedByCoord.out.bam/.wasp.par.bam} ; done
+
+for file in *.wasp.par.bam ; do java -jar /software/picard.jar  MarkDuplicates -I $file -O ${file/.wasp.par.bam/.ase.par.bam} -M ${file/.wasp.par.bam/_metrics.ase.par.txt}; done
+for file in *.ase.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I $file; done
+```
+
+12. Profile ASE using GATK
 ```
 /software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP1_MKRN250026363-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
 /software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP2_MKRN250026364-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
