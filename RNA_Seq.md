@@ -812,7 +812,7 @@ csscree <- fviz_screeplot(pca, ncp=10,title = "")
 csscree
 ```
 
-11. Generate mapped files using WASP for ASE
+12. Map reads using WASP for ASE
 ```
 /software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --runMode genomeGenerate  --genomeDir star_index --genomeFastaFiles iwgsc_refseqv2.1_part.fa  --sjdbGTFfile iwgsc_refseqv2.1_annotation_200916_HC_unknown_part.gtf --sjdbOverhang 100 --limitGenomeGenerateRAM 48889586954
 
@@ -830,7 +830,7 @@ for file in *.wasp.par.bam ; do java -jar /software/picard.jar  MarkDuplicates -
 for file in *.ase.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I $file; done
 ```
 
-12. Profile ASE using GATK
+13. Profile ASE using GATK
 ```
 /software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP1_MKRN250026363-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
 /software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP2_MKRN250026364-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
