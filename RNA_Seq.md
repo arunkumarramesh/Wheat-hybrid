@@ -602,17 +602,10 @@ with open(in_gtf) as fin, open(out_gtf, "w") as fout:
 /software/htslib-1.16/tabix -p vcf wheat_het_snps_filtered.vcf.gz
 gunzip wheat_het_snps_filtered.vcf.gz
 
-/software/vcftools-vcftools-581c231/bin/vcftools --vcf wheat_ase_het_snps_filtered.vcf --positions filtered_set_CS.txt --recode --recode-INFO-all --out wheat_ase_snps_het
-/software/htslib-1.16/bgzip wheat_ase_snps_het.recode.vcf
-/software/htslib-1.16/tabix wheat_ase_snps_het.recode.vcf.gz
-
 /software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
 /software/htslib-1.16/tabix -p vcf par_het_snps_filtered.vcf.gz
 gunzip par_het_snps_filtered.vcf.gz
 
-/software/vcftools-vcftools-581c231/bin/vcftools --vcf par_ase_het_snps_filtered.vcf --positions filtered_set_PAR.txt --recode --recode-INFO-all --out par_ase_snps_het
-/software/htslib-1.16/bgzip par_ase_snps_het.recode.vcf
-/software/htslib-1.16/tabix par_ase_snps_het.recode.vcf.gz
 ```
 
 11. Only keep sites that are not heterozygous in parents and are biallelic. Also do PCA for SNPs.
@@ -814,6 +807,14 @@ csscree
 
 12. Map reads using WASP for ASE
 ```
+/software/vcftools-vcftools-581c231/bin/vcftools --vcf wheat_ase_het_snps_filtered.vcf --positions filtered_set_CS.txt --recode --recode-INFO-all --out wheat_ase_snps_het
+/software/htslib-1.16/bgzip wheat_ase_snps_het.recode.vcf
+/software/htslib-1.16/tabix wheat_ase_snps_het.recode.vcf.gz
+
+/software/vcftools-vcftools-581c231/bin/vcftools --vcf par_ase_het_snps_filtered.vcf --positions filtered_set_PAR.txt --recode --recode-INFO-all --out par_ase_snps_het
+/software/htslib-1.16/bgzip par_ase_snps_het.recode.vcf
+/software/htslib-1.16/tabix par_ase_snps_het.recode.vcf.gz
+
 /software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --runMode genomeGenerate  --genomeDir star_index --genomeFastaFiles iwgsc_refseqv2.1_part.fa  --sjdbGTFfile iwgsc_refseqv2.1_annotation_200916_HC_unknown_part.gtf --sjdbOverhang 100 --limitGenomeGenerateRAM 48889586954
 
 for file in *_1.paired.fq.gz; do /software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --genomeDir star_index --readFilesIn $file ${file/_1.paired.fq.gz/_2.paired.fq.gz} --readFilesCommand zcat  --varVCFfile wheat_het_snps_filtered.vcf  --waspOutputMode SAMtag  --outSAMtype BAM SortedByCoordinate  --outFilterMultimapNmax 1  --outSAMattrRGline ID:$file SM:$file PL:ILLUMINA LB:lib1 PU:unit1 --outSAMattributes NH HI AS nM NM MD jM jI rB MC vA vG vW  --outFileNamePrefix ${file/_1.paired.fq.gz/} ; done
