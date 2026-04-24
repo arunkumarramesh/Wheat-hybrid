@@ -391,12 +391,12 @@ gffread Triticum_aestivum_paragon.GCA949126075v1.62.gff3 -T -o Triticum_aestivum
 cut -f 1-2 Paragon_part.fa.fai >Paragon_part_chr_sizes.txt
 sed -i '/scaffold/d' Paragon_part_chr_sizes.txt
 python3 split_gff_par.py
+python3 split_bed_par.py
 grep '^scaffold' Triticum_aestivum_paragon.GCA949126075v1.62.gtf | cat Triticum_aestivum_paragon.GCA949126075v1.62_part.gtf - >Triticum_aestivum_paragon.GCA949126075v1.62_scaf_part.gtf
 awk '$3 == "exon" {print $1, $4, $5}'  Triticum_aestivum_paragon.GCA949126075v1.62.gff3 >  Triticum_aestivum_paragon.GCA949126075v1.62_exon.bed
 awk '$3 == "transcript"' Triticum_aestivum_paragon.GCA949126075v1.62_scaf_part.gtf > transcripts_par_part.gtf
 awk -F'\t' 'BEGIN{OFS="\t"} /^#/ || $3=="gene" {print}' Triticum_aestivum_paragon.GCA949126075v1.62.gff3 > genes_par.gff3
 cut -f 2 SingleCopyOrthologues_matrix.tsv | tail -n +2 | sed 's/\.[^.]*$//' | grep -F -f - transcripts_par_part.gtf | cut -f 1,4,5 | sort -u  >one_one_orthologs_par.bed
-python3 split_bed_par.py
 awk -F'\t' 'BEGIN{OFS="\t"} /^#/ || $3=="gene" {print}' iwgsc_refseqv2.1_annotation_200916_HC.gff3 > genes_refseqv2_HC.gff3
 ```
 split_bed.py
@@ -563,13 +563,14 @@ with open("Triticum_aestivum_paragon.GCA949126075v1.62_exon.bed") as f,open("Tri
         else:
             out.write(f"{chrom}_part2\t{start-part1_size}\t{end-part1_size}\n")
 ```
-10. Identify heterozygous sites
+10. Identify sites for ASE analyses
 ```
-
+/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -R iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o wheat_ase_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
 /software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o wheat_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
 /software/htslib-1.16/tabix -p vcf wheat_het_snps_filtered.vcf.gz
 gunzip wheat_het_snps_filtered.vcf.gz
 
+/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o par_ase_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
 /software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
 /software/htslib-1.16/tabix -p vcf par_het_snps_filtered.vcf.gz
 gunzip par_het_snps_filtered.vcf.gz
