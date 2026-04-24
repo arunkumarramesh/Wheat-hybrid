@@ -593,17 +593,56 @@ with open(in_gtf) as fin, open(out_gtf, "w") as fout:
             right[8] = with_split_attr(right[8], "right")
             fout.write("\t".join(right) + "\n")
 ```
-10. Identify het sites
+10. Identify heterzygous sites
 ```
-/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -R iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o wheat_ase_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
-/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o wheat_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
-/proj/popgen/a.ramesh/software/htslib-1.16/tabix -p vcf wheat_het_snps_filtered.vcf.gz
+/software/bcftools-1.16/bcftools view  -R iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o wheat_ase_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
+/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o wheat_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
+/software/htslib-1.16/tabix -p vcf wheat_het_snps_filtered.vcf.gz
 gunzip wheat_het_snps_filtered.vcf.gz
 
-#/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=
+/software/vcftools-vcftools-581c231/bin/vcftools --vcf wheat_ase_het_snps_filtered.vcf --positions filtered_set_CS.txt --recode --recode-INFO-all --out wheat_ase_snps_het
+/software/htslib-1.16/bgzip wheat_ase_snps_het.recode.vcf
+/software/htslib-1.16/tabix wheat_ase_snps_het.recode.vcf.gz
+
+/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=
 1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o par_ase_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
-#/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filter
+/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filter
 ed.vcf.gz par.ase.snps.vcf.gz
-#/proj/popgen/a.ramesh/software/htslib-1.16/tabix -p vcf par_het_snps_filtered.vcf.gz
-#gunzip par_het_snps_filtered.vcf.gz
+/software/htslib-1.16/tabix -p vcf par_het_snps_filtered.vcf.gz
+gunzip par_het_snps_filtered.vcf.gz
+
+/software/vcftools-vcftools-581c231/bin/vcftools --vcf par_ase_het_snps_filtered.vcf --positions filtered_set_PAR.txt --recode --recode-INFO-all --out par_ase_snps_het
+/software/htslib-1.16/bgzip par_ase_snps_het.recode.vcf
+/software/htslib-1.16/tabix par_ase_snps_het.recode.vcf.gz
 ```
+
+11. Profile ASE
+```
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP1_MKRN250026363-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP2_MKRN250026364-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP3_RNA_MKRN250033262-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP3.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I PxCS1_MKRN250026360-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O PxCS1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I PXCS2_RNA_MKRN250033261-1A_22VTNMLT4_L4.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O PxCS2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CS1_RNA_MKRN250026357-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CS1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CS2_RNA_MKRN250026358-1A_22VTNMLT4_L4.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CS2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CS3_RNA_MKRN250026359-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CS3.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I P1_RNA_MKRN250026354-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O P1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I P2_RNA_MKRN250026355-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O P2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I P3_RNA_MKRN250026356-1A_22VTNMLT4_L4.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O P3.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+
+
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I CSxP1_MKRN250026363-1A_22VTNMLT4_L3.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O CSxP1.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I CSxP2_MKRN250026364-1A_22VTNMLT4_L3.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O CSxP2.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I CSxP3_RNA_MKRN250033262-1A_22VTNMLT4_L3.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O CSxP3.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I PxCS1_MKRN250026360-1A_22VTNMLT4_L3.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O PxCS1.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I PXCS2_RNA_MKRN250033261-1A_22VTNMLT4_L4.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O PxCS2.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I CS1_RNA_MKRN250026357-1A_22VTNMLT4_L3.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O CS1.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I CS2_RNA_MKRN250026358-1A_22VTNMLT4_L4.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O CS2.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I CS3_RNA_MKRN250026359-1A_22VTNMLT4_L3.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O CS3.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I P1_RNA_MKRN250026354-1A_22VTNMLT4_L3.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O P1.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I P2_RNA_MKRN250026355-1A_22VTNMLT4_L3.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O P2.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+/software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I P3_RNA_MKRN250026356-1A_22VTNMLT4_L4.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O P3.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
+
+``` 
