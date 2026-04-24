@@ -361,6 +361,7 @@ for file in *_split.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I
 # interval list is  the chr names
 for file in *_split.par.bam ; do /software/gatk-4.3.0.0/gatk HaplotypeCaller -R Paragon_part.fa -I $file -O ${file/_split.par.bam/.par.g.vcf.gz} -ERC GVCF -L interval_par.list ; done
 /software/gatk-4.3.0.0/gatk --java-options "-Xmx45g -Xms1g" GenomicsDBImport -V CS1_RNA_MKRN250026357-1A_22VTNMLT4_L3.par.g.vcf.gz  -V CS2_RNA_MKRN250026358-1A_22VTNMLT4_L4.par.g.vcf.gz  --genomicsdb-workspace-path genomicsdb_par --tmp-dir /projects/wheat/tmp -L interval_par.list
+ls *.par.g.vcf.gz | tail -n +3 > samples_par
 cat samples_par | while read line; do /software/gatk-4.3.0.0/gatk --java-options "-Xmx45g" GenomicsDBImport --genomicsdb-update-workspace-path genomicsdb_par --tmp-dir /projects/wheat/tmp -V $line; done
 /software/gatk-4.3.0.0/gatk  --java-options "-Xmx45g" GenotypeGVCFs -R Paragon_part.fa -V gendb://genomicsdb_par -G StandardAnnotation -O par.ase.output.vcf.gz -L interval_par.list
 /software/gatk-4.3.0.0/gatk SelectVariants -V  par.ase.output.vcf.gz -select-type SNP -O  par.ase.snps.vcf.gz
@@ -383,6 +384,7 @@ grep '^ChrUnknown' iwgsc_refseqv2.1_annotation_200916_HC.gtf | cat iwgsc_refseqv
 
 
 grep '>' Triticum_aestivum_paragon.GCA949126075v1.cdna.all.fa | awk 'match($0,/primary_assembly:[^:]+:([^:]+:[0-9]+:[0-9]+):/,m){print m[1]}'  | sed 's/:/\t/g' > paragon_cdna.bed
+awk '$3 == "exon" {print $1, $4, $5}'  Triticum_aestivum_paragon.GCA949126075v1.62.gff3 >  Triticum_aestivum_paragon.GCA949126075v1.62_exon.bed
 grep 'scaffold' Triticum_aestivum_paragon.GCA949126075v1.62_exon.bed | sed 's/ /\t/g'| cat Triticum_aestivum_paragon.GCA949126075v1.62_exon_part.bed - > Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed
 gffread Triticum_aestivum_paragon.GCA949126075v1.62.gff3 -T -o Triticum_aestivum_paragon.GCA949126075v1.62.gtf 
 cut -f 1-2 Paragon_part.fa.fai >Paragon_part_chr_sizes.txt
@@ -604,10 +606,8 @@ gunzip wheat_het_snps_filtered.vcf.gz
 /software/htslib-1.16/bgzip wheat_ase_snps_het.recode.vcf
 /software/htslib-1.16/tabix wheat_ase_snps_het.recode.vcf.gz
 
-/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=
-1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o par_ase_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
-/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filter
-ed.vcf.gz par.ase.snps.vcf.gz
+/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o par_ase_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
+/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
 /software/htslib-1.16/tabix -p vcf par_het_snps_filtered.vcf.gz
 gunzip par_het_snps_filtered.vcf.gz
 
