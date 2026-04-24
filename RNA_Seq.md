@@ -9,9 +9,6 @@ for file in *_1.fq.gz; do java -jar /software/Trimmomatic-0.39/trimmomatic-0.39.
 wget https://urgi.versailles.inra.fr/download/iwgsc/IWGSC_RefSeq_Annotations/v2.1/iwgsc_refseqv2.1_gene_annotation_200916.zip
 wget  https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-61/fasta/triticum_aestivum_paragon/cdna/Triticum_aestivum_paragon.GCA949126075v1.cdna.all.fa.gz
 
-cat iwgsc_refseqv2.1_annotation_200916_LC_mrna.fasta iwgsc_refseqv2.1_annotation_200916_HC_mrna.fasta > ../iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna.fasta
-cat iwgsc_refseqv2.1_annotation_200916_LC_pep.fasta iwgsc_refseqv2.1_annotation_200916_HC_pep.fasta > ../iwgsc_refseqv2.1_annotation_200916_HC_LC_pep.fasta
-
 ```
 3. Map reads to transcriptome references
 ```
