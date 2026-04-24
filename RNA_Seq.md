@@ -192,7 +192,7 @@ head(tx2gene)
 # make vector pointing to the kallisto results files   ########
 samples <- read.table("cs_kallisto_samplenames.txt", header=F)
 samples
-
+#  samplenames with trailing "_trimmed_CS"
 samples2 <- read.table("samples_trimmed_CS", header=F)
 samples2
 
@@ -239,6 +239,7 @@ head(tx2gene)
 samples <- read.table("par_kallisto_samplenames.txt", header=F)
 samples
 
+#  samplenames with trailing "_trimmed_PAR"
 samples2 <- read.table("samples_trimmed_PAR", header=F)
 samples2
 
