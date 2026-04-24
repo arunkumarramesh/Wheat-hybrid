@@ -20,14 +20,16 @@ cat iwgsc_refseqv2.1_annotation_200916_LC_pep.fasta iwgsc_refseqv2.1_annotation_
 
 grep '>' iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna.fasta | cut -d ' ' -f 1 | sed 's/>//' >transnames
 sed 's/\..*//g' transnames | paste -d ',' transnames - >transcript_to_gene_refseqv2.1.csv
-ls -d *CS/ | sed 's/\///' >cs_kallisto_samplenames.txt
 
 grep '>' Triticum_aestivum_paragon.GCA949126075v1.cdna.all.fa | cut -d ' ' -f 1 | sed 's/>//' >transnames2
 sed 's/\.[0-9]\+$//' transnames2 | paste -d ',' transnames2 - >transcript_to_gene_paragon.GCA949126075v1.csv
-ls -d *PAR/ | sed 's/\///' >par_kallisto_samplenames.txt
+
 
 for file in *_1.paired.fq.gz; do /software/kallisto/build/src/kallisto quant -i iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_index -o ${file/_1.paired.fq.gz/_CS} -t 20  $file ${file/_1.paired.fq.gz/_2.paired.fq.gz} ; done
 for file in *_1.paired.fq.gz; do /software/kallisto/build/src/kallisto quant -i Triticum_aestivum_paragon.GCA949126075v1.cdna.all_index -o ${file/_1.paired.fq.gz/_PAR} -t 20  $file ${file/_1.paired.fq.gz/_2.paired.fq.gz} ; done
+
+ls -d *CS/ | sed 's/\///' >cs_kallisto_samplenames.txt
+ls -d *PAR/ | sed 's/\///' >par_kallisto_samplenames.txt
 ```
 4. Obtain 1-1 orthologs for Chinese Spring and Paragon Reference Transcripts
 ```
