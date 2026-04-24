@@ -366,3 +366,244 @@ cat samples_par | while read line; do /software/gatk-4.3.0.0/gatk --java-options
 /software/gatk-4.3.0.0/gatk SelectVariants -V  par.ase.output.vcf.gz -select-type SNP -O  par.ase.snps.vcf.gz
 
 ```
+
+9. Also split annotation files by part
+```
+awk '$3 == "exon" {print $1, $4, $5}'  iwgsc_refseqv2.1_annotation_200916_HC.gff3 > iwgsc_refseqv2.1_annotation_200916_HC_exon.bed
+awk '$3 == "transcript"' iwgsc_refseqv2.1_annotation_200916_HC_unknown_part.gtf > transcripts_part.gtf
+cut -f 3 SingleCopyOrthologues_matrix.tsv | tail -n +2 | sed 's/\..*//'  | grep -F -f - transcripts_part.gtf | cut -f 1,4,5  | sort -u >one_one_orthologs.bed
+awk '$3 == "gene"' iwgsc_refseqv2.1_annotation_200916_HC.gff3 | cut -f 1,3-5,9 | sed -e 's/;.*//' -e 's/ID=//' > gene.gff3
+cut -f 1-2 iwgsc_refseqv2.1_part.fa.fai > iwgsc_refseqv2.1_part_chr_sizes.txt
+sed -i '/ChrUnknown/d' iwgsc_refseqv2.1_part_chr_sizes.txt
+python3 split_bed.py
+grep 'ChrUnknown' iwgsc_refseqv2.1_annotation_200916_HC_exon.bed | sed 's/ /\t/g'| cat iwgsc_refseqv2.1_annotation_200916_HC_exon_part.bed - > iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed
+gffread iwgsc_refseqv2.1_annotation_200916_HC.gff3 -T -o iwgsc_refseqv2.1_annotation_200916_HC.gtf 
+python3 split_gff.py
+grep '^ChrUnknown' iwgsc_refseqv2.1_annotation_200916_HC.gtf | cat iwgsc_refseqv2.1_annotation_200916_HC_part.gtf - >iwgsc_refseqv2.1_annotation_200916_HC_unknown_part.gtf
+
+
+grep '>' Triticum_aestivum_paragon.GCA949126075v1.cdna.all.fa | awk 'match($0,/primary_assembly:[^:]+:([^:]+:[0-9]+:[0-9]+):/,m){print m[1]}'  | sed 's/:/\t/g' > paragon_cdna.bed
+grep 'scaffold' Triticum_aestivum_paragon.GCA949126075v1.62_exon.bed | sed 's/ /\t/g'| cat Triticum_aestivum_paragon.GCA949126075v1.62_exon_part.bed - > Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed
+gffread Triticum_aestivum_paragon.GCA949126075v1.62.gff3 -T -o Triticum_aestivum_paragon.GCA949126075v1.62.gtf 
+cut -f 1-2 Paragon_part.fa.fai >Paragon_part_chr_sizes.txt
+sed -i '/scaffold/d' Paragon_part_chr_sizes.txt
+python3 split_gff_par.py
+grep '^scaffold' Triticum_aestivum_paragon.GCA949126075v1.62.gtf | cat Triticum_aestivum_paragon.GCA949126075v1.62_part.gtf - >Triticum_aestivum_paragon.GCA949126075v1.62_scaf_part.gtf
+awk '$3 == "exon" {print $1, $4, $5}'  Triticum_aestivum_paragon.GCA949126075v1.62.gff3 >  Triticum_aestivum_paragon.GCA949126075v1.62_exon.bed
+awk '$3 == "transcript"' Triticum_aestivum_paragon.GCA949126075v1.62_scaf_part.gtf > transcripts_par_part.gtf
+awk -F'\t' 'BEGIN{OFS="\t"} /^#/ || $3=="gene" {print}' Triticum_aestivum_paragon.GCA949126075v1.62.gff3 > genes_par.gff3
+cut -f 2 SingleCopyOrthologues_matrix.tsv | tail -n +2 | sed 's/\.[^.]*$//' | grep -F -f - transcripts_par_part.gtf | cut -f 1,4,5 | sort -u  >one_one_orthologs_par.bed
+python3 split_bed_par.py
+awk -F'\t' 'BEGIN{OFS="\t"} /^#/ || $3=="gene" {print}' iwgsc_refseqv2.1_annotation_200916_HC.gff3 > genes_refseqv2_HC.gff3
+```
+split_bed.py
+```
+chrom_sizes = {}
+with open("iwgsc_refseqv2.1_part_chr_sizes.txt") as f:
+    for line in f:
+        chrom, size = line.strip().split("\t")
+        base_chrom = chrom.replace("_part1", "").replace("_part2", "")
+        chrom_sizes.setdefault(base_chrom, [0, 0])
+        if "part1" in chrom:
+            chrom_sizes[base_chrom][0] = int(size)
+        else:
+            chrom_sizes[base_chrom][1] = int(size)
+
+with open("iwgsc_refseqv2.1_annotation_200916_HC_exon.bed") as f, open("iwgsc_refseqv2.1_annotation_200916_HC_exon_part.bed", "w") as out:
+    for line in f:
+        chrom, start, end = line.strip().split()
+        start = int(start)
+        end = int(end)
+        part1_size = chrom_sizes[chrom][0]
+
+        if start < part1_size:
+            out.write(f"{chrom}_part1\t{start}\t{end}\n")
+        else:
+            out.write(f"{chrom}_part2\t{start - part1_size}\t{end - part1_size}\n")
+
+```
+
+split_gff.py
+```
+sizes_file = "../iwgsc_refseqv2.1_part_chr_sizes.txt"
+in_gtf = "iwgsc_refseqv2.1_annotation_200916_HC.gtf"
+out_gtf = "iwgsc_refseqv2.1_annotation_200916_HC_part.gtf"
+
+chrom_sizes = {}
+with open(sizes_file) as f:
+    for line in f:
+        chrom, size = line.strip().split("\t")[:2]
+        base = chrom.replace("_part1", "").replace("_part2", "")
+        chrom_sizes.setdefault(base, [None, None])
+        if chrom.endswith("_part1"):
+            chrom_sizes[base][0] = int(size)
+        elif chrom.endswith("_part2"):
+            chrom_sizes[base][1] = int(size)
+
+def with_split_attr(attr_str, tag):
+    s = attr_str.rstrip()
+    if not s.endswith(";"):
+        s += ";"
+    return s + f' split "{tag}";'
+
+with open(in_gtf) as fin, open(out_gtf, "w") as fout:
+    for line in fin:
+        if line.startswith("#") or not line.strip():
+            fout.write(line)
+            continue
+        cols = line.rstrip("\n").split("\t")
+        chrom = cols[0]
+        start = int(cols[3])
+        end = int(cols[4])
+        part1_size = chrom_sizes[chrom][0]
+
+        if end <= part1_size:
+            cols[0] = f"{chrom}_part1"
+            fout.write("\t".join(cols) + "\n")
+        elif start > part1_size:
+            cols[0] = f"{chrom}_part2"
+            cols[3] = str(start - part1_size)
+            cols[4] = str(end - part1_size)
+            fout.write("\t".join(cols) + "\n")
+        else:
+            left = cols.copy()
+            left[0] = f"{chrom}_part1"
+            left[4] = str(part1_size)
+            left[8] = with_split_attr(left[8], "left")
+            fout.write("\t".join(left) + "\n")
+
+            right = cols.copy()
+            right[0] = f"{chrom}_part2"
+            right[3] = "1"
+            right[4] = str(end - part1_size)
+            right[8] = with_split_attr(right[8], "right")
+            fout.write("\t".join(right) + "\n")
+
+```
+split_gff_par.py
+```
+sizes_file = "Paragon_part_chr_sizes.txt"
+in_gtf = "Triticum_aestivum_paragon.GCA949126075v1.62.gtf"
+out_gtf = "Triticum_aestivum_paragon.GCA949126075v1.62_part.gtf"
+
+chrom_sizes = {}
+with open(sizes_file) as f:
+    for line in f:
+        chrom, size = line.strip().split("\t")[:2]
+        base = chrom.replace("_part1", "").replace("_part2", "")
+        chrom_sizes.setdefault(base, [None, None])
+        if chrom.endswith("_part1"):
+            chrom_sizes[base][0] = int(size)
+        elif chrom.endswith("_part2"):
+            chrom_sizes[base][1] = int(size)
+
+def with_split_attr(attr_str, tag):
+    s = attr_str.rstrip()
+    if not s.endswith(";"):
+        s += ";"
+    return s + f' split "{tag}";'
+
+with open(in_gtf) as fin, open(out_gtf, "w") as fout:
+    for line in fin:
+        if line.startswith("#") or not line.strip():
+            fout.write(line)
+            continue
+        cols = line.rstrip("\n").split("\t")
+        chrom = cols[0]
+        start = int(cols[3])
+        end = int(cols[4])
+        part1_size = chrom_sizes[chrom][0]
+
+        if end <= part1_size:
+            cols[0] = f"{chrom}_part1"
+            fout.write("\t".join(cols) + "\n")
+        elif start > part1_size:
+            cols[0] = f"{chrom}_part2"
+            cols[3] = str(start - part1_size)
+            cols[4] = str(end - part1_size)
+            fout.write("\t".join(cols) + "\n")
+        else:
+            left = cols.copy()
+            left[0] = f"{chrom}_part1"
+            left[4] = str(part1_size)
+            left[8] = with_split_attr(left[8], "left")
+            fout.write("\t".join(left) + "\n")
+
+            right = cols.copy()
+            right[0] = f"{chrom}_part2"
+            right[3] = "1"
+            right[4] = str(end - part1_size)
+            right[8] = with_split_attr(right[8], "right")
+            fout.write("\t".join(right) + "\n")
+
+```
+split_bed_par.py
+```
+sizes_file = "Paragon_part_chr_sizes.txt"
+in_gtf = "Triticum_aestivum_paragon.GCA949126075v1.62.gtf"
+out_gtf = "Triticum_aestivum_paragon.GCA949126075v1.62_part.gtf"
+
+chrom_sizes = {}
+with open(sizes_file) as f:
+    for line in f:
+        chrom, size = line.strip().split("\t")[:2]
+        base = chrom.replace("_part1", "").replace("_part2", "")
+        chrom_sizes.setdefault(base, [None, None])
+        if chrom.endswith("_part1"):
+            chrom_sizes[base][0] = int(size)
+        elif chrom.endswith("_part2"):
+            chrom_sizes[base][1] = int(size)
+
+def with_split_attr(attr_str, tag):
+    s = attr_str.rstrip()
+    if not s.endswith(";"):
+        s += ";"
+    return s + f' split "{tag}";'
+
+with open(in_gtf) as fin, open(out_gtf, "w") as fout:
+    for line in fin:
+        if line.startswith("#") or not line.strip():
+            fout.write(line)
+            continue
+        cols = line.rstrip("\n").split("\t")
+        chrom = cols[0]
+        start = int(cols[3])
+        end = int(cols[4])
+        part1_size = chrom_sizes[chrom][0]
+
+        if end <= part1_size:
+            cols[0] = f"{chrom}_part1"
+            fout.write("\t".join(cols) + "\n")
+        elif start > part1_size:
+            cols[0] = f"{chrom}_part2"
+            cols[3] = str(start - part1_size)
+            cols[4] = str(end - part1_size)
+            fout.write("\t".join(cols) + "\n")
+        else:
+            left = cols.copy()
+            left[0] = f"{chrom}_part1"
+            left[4] = str(part1_size)
+            left[8] = with_split_attr(left[8], "left")
+            fout.write("\t".join(left) + "\n")
+
+            right = cols.copy()
+            right[0] = f"{chrom}_part2"
+            right[3] = "1"
+            right[4] = str(end - part1_size)
+            right[8] = with_split_attr(right[8], "right")
+            fout.write("\t".join(right) + "\n")
+```
+10. Identify het sites
+```
+/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -R iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o wheat_ase_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
+/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o wheat_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
+/proj/popgen/a.ramesh/software/htslib-1.16/tabix -p vcf wheat_het_snps_filtered.vcf.gz
+gunzip wheat_het_snps_filtered.vcf.gz
+
+#/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=
+1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o par_ase_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
+#/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filter
+ed.vcf.gz par.ase.snps.vcf.gz
+#/proj/popgen/a.ramesh/software/htslib-1.16/tabix -p vcf par_het_snps_filtered.vcf.gz
+#gunzip par_het_snps_filtered.vcf.gz
+```
