@@ -607,6 +607,13 @@ gunzip par_het_snps_filtered.vcf.gz
 
 ```
 
+11. Include a merged file with PxCS3 to show no discrepency when genotype calls are included. only at gene expression level
+```
+/proj/popgen/a.ramesh/software/gatk-4.3.0.0/gatk GenotypeGVCFs  -R iwgsc_refseqv2.1_part.fa  -V PxCS3_RNA_MKRN250026362-1A_22VTNMLT4_L3.g.vcf.gz  -L wheat_ase_het_snps_filtered.vcf.gz  --include-non-variant-sites true  -O PxCS3_on_wheat_sites.vcf.gz
+/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools merge -m all -Oz -o wheat_sites_merged_cs.vcf.gz wheat_ase_het_snps_filtered.vcf.gz PxCS3_on_wheat_sites.vcf.gz
+gunzip wheat_sites_merged_cs.vcf.gz
+```
+
 11. Only keep sites that are not heterozygous in parents and are biallelic. Also do PCA for SNPs.
 ```
 library(vcfR)
