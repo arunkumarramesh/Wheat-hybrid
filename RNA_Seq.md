@@ -584,7 +584,7 @@ gunzip par_het_snps_filtered.vcf.gz
 gunzip wheat_sites_merged_cs.vcf.gz
 ```
 
-11. Only keep sites that are not heterozygous in parents and are biallelic. Also do PCA for SNPs.
+12. Only keep sites that are not heterozygous in parents and are biallelic. Also do PCA for SNPs.
 ```
 library(vcfR)
 library(factoextra)
@@ -781,7 +781,7 @@ csscree <- fviz_screeplot(pca, ncp=10,title = "")
 csscree
 ```
 
-12. Map reads using WASP for ASE
+13. Map reads using WASP for ASE
 ```
 /software/vcftools-vcftools-581c231/bin/vcftools --vcf wheat_ase_het_snps_filtered.vcf --positions filtered_set_CS.txt --recode --recode-INFO-all --out wheat_ase_snps_het
 /software/htslib-1.16/bgzip wheat_ase_snps_het.recode.vcf
@@ -807,7 +807,7 @@ for file in *.wasp.par.bam ; do java -jar /software/picard.jar  MarkDuplicates -
 for file in *.ase.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I $file; done
 ```
 
-13. Profile ASE using GATK
+14. Profile ASE using GATK
 ```
 /software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP1_MKRN250026363-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
 /software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP2_MKRN250026364-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
