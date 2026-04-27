@@ -839,3 +839,70 @@ for file in *.ase.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I $
 ```
 
 15. Run differential expression tests using de_wheat.R
+
+16. Compare homoeolog expression bias for differentially expressed genes using assign_homoeolog_expression_bias_categories.R
+
+17. Compare allele specific expression using ase_test.R
+
+18. Process Harper et al. data
+```
+
+/proj/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/prefetch --option-file harper_acc -O harper_data
+for file in *.sra; do /proj/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/fastq-dump --gzip --split-3  $file; done
+
+mv SRR3031950.fastq.gz CS.fastq.gz
+mv SRR3031953.fastq.gz P.fastq.gz
+mv SRR2983146.fastq.gz CSxP04.fastq.gz
+mv SRR2983147.fastq.gz CSxP05.fastq.gz
+mv SRR2983148.fastq.gz CSxP17.fastq.gz
+mv SRR2983149.fastq.gz CSxP19.fastq.gz
+mv SRR2983150.fastq.gz CSxP20.fastq.gz
+mv SRR2983151.fastq.gz CSxP22.fastq.gz
+mv SRR2983152.fastq.gz CSxP24.fastq.gz
+mv SRR2983153.fastq.gz CSxP25.fastq.gz
+mv SRR2983154.fastq.gz CSxP26.fastq.gz
+mv SRR2983155.fastq.gz CSxP29.fastq.gz
+mv SRR2983156.fastq.gz CSxP30.fastq.gz
+mv SRR2983157.fastq.gz CSxP34.fastq.gz
+mv SRR2983158.fastq.gz CSxP06.fastq.gz
+mv SRR2983159.fastq.gz CSxP35.fastq.gz
+mv SRR2983160.fastq.gz CSxP37.fastq.gz
+mv SRR2983161.fastq.gz CSxP38.fastq.gz
+mv SRR2983172.fastq.gz CSxP41.fastq.gz
+mv SRR2983174.fastq.gz CSxP42.fastq.gz
+mv SRR2983175.fastq.gz CSxP46.fastq.gz
+mv SRR2983176.fastq.gz CSxP47.fastq.gz
+mv SRR2983177.fastq.gz CSxP49.fastq.gz
+mv SRR2983179.fastq.gz CSxP53.fastq.gz
+mv SRR2983182.fastq.gz CSxP54.fastq.gz
+mv SRR2983183.fastq.gz CSxP07.fastq.gz
+mv SRR2983185.fastq.gz CSxP56.fastq.gz
+mv SRR2983186.fastq.gz CSxP58.fastq.gz
+mv SRR2983187.fastq.gz CSxP59.fastq.gz
+mv SRR2983189.fastq.gz CSxP61.fastq.gz
+mv SRR2983190.fastq.gz CSxP62.fastq.gz
+mv SRR2983192.fastq.gz CSxP65.fastq.gz
+mv SRR2983194.fastq.gz CSxP66.fastq.gz
+mv SRR2983195.fastq.gz CSxP67.fastq.gz
+mv SRR2983196.fastq.gz CSxP73.fastq.gz
+mv SRR2983197.fastq.gz CSxP76.fastq.gz
+mv SRR2983198.fastq.gz CSxP11.fastq.gz
+mv SRR2983199.fastq.gz CSxP78.fastq.gz
+mv SRR2983200.fastq.gz CSxP81.fastq.gz
+mv SRR2983201.fastq.gz CSxP84.fastq.gz
+mv SRR2983202.fastq.gz CSxP87.fastq.gz
+mv SRR2983315.fastq.gz CSxP89.fastq.gz
+mv SRR2983317.fastq.gz CSxP91.fastq.gz
+mv SRR2983318.fastq.gz CSxP93.fastq.gz
+mv SRR2983319.fastq.gz CSxP12.fastq.gz
+mv SRR2983320.fastq.gz CSxP13.fastq.gz
+mv SRR2983321.fastq.gz CSxP14.fastq.gz
+mv SRR2983322.fastq.gz CSxP15.fastq.gz
+mv SRR2983323.fastq.gz CSxP16.fastq.gz
+
+for file in *.fastq.gz; do java -jar /proj/popgen/a.ramesh/software/Trimmomatic-0.39/trimmomatic-0.39.jar SE -phred33 -threads 20 $file ${file/.fastq.gz/_trimmed.fq.gz} ILLUMINACLIP:TruSeq3-SE:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36; done
+
+for file in *_trimmed.fq.gz; do /proj/popgen/a.ramesh/software/kallisto/build/src/kallisto quant -i iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_index  -o ${file/.fq.gz/_CS} --single -l 200 -s 20 -t 20  $file ; done
+for file in *_trimmed.fq.gz; do /proj/popgen/a.ramesh/software/kallisto/build/src/kallisto quant -i Triticum_aestivum_paragon.GCA949126075v1.cdna.all_index  -o ${file/.fq.gz/_PAR} --single -l 200 -s 20 -t 20  $file ; done
+
+```
