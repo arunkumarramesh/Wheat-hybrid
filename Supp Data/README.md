@@ -37,3 +37,6 @@ classified_limma.csv - Regulatory classifications based on linear models impleme
 classified_McManus_par.csv - Regulatory classifications based on beta-binomial models implemented with MBASED for detecting ASE using GCA949126075v1 reference
 
 classified_limma_par.csv - Regulatory classifications based on linear models implemented for detecting ASE using GCA949126075v1 reference
+
+bias_category_all_samples_inc_orig_expr.csv - Triad identification for homoeologs
+
