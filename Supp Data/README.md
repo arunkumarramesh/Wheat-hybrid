@@ -20,6 +20,8 @@ cs_tpm.tsv - Transcript per million (TPM) estimated using IWGSC RefSeq v2.1 refe
 
 par_tpm.tsv - Transcript per million (TPM) estimated using GCA949126075v1 reference
 
+ASE data folder - contains Chinese Spring and Paragon allele counts for hybrid genotypes. Those without "_par_" are counts based on mapping to the IWGSC RefSeq v2.1 reference and those with "_par_" counts based on mapping to the GCA949126075v1 reference
+
 CSvP all genes.csv - Differentially Expressed genes between Chinese Spring and Paragon using IWGSC RefSeq v2.1 reference
 
 CSvP all genes_PAR.csv - Differentially Expressed genes between Chinese Spring and Paragon using GCA949126075v1 reference
