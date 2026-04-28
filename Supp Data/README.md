@@ -12,6 +12,10 @@ cs_count.tsv - Read counts estimated using IWGSC RefSeq v2.1 reference
 
 par_count.tsv - Read counts estimated using GCA949126075v1 reference
 
+cs_tpm.tsv - Transcript per million (TPM) estimated using IWGSC RefSeq v2.1 reference
+
+par_tpm.tsv - Transcript per million (TPM) estimated using GCA949126075v1 reference
+
 CSvP all genes.csv - Differentially Expressed genes between Chinese Spring and Paragon using IWGSC RefSeq v2.1 reference
 
 CSvP all genes_PAR.csv - Differentially Expressed genes between Chinese Spring and Paragon using GCA949126075v1 reference
