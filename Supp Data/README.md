@@ -6,6 +6,8 @@ SingleCopyOrthologues_matrix.tsv - 1:1 orthologs identified between Chinese Spri
 
 BP.csv, MF.csv, CC.csv - files with ontologies for gene from IWGSC RefSeq v2.1
 
+homoeologs_1_1_1_synt_and_non_synt.csv - Triad Classification from R. H. Ramírez-González et al Science DOI: 10.1126/science.aar6089
+
 gene.gff3 - file containing location of IWGSC RefSeq v2.1 genes
 
 cs_count.tsv - Read counts estimated using IWGSC RefSeq v2.1 reference
