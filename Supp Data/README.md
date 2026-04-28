@@ -4,6 +4,10 @@ adaptors_novogene.fa - Adaptor sequences used for RNA-seq
 
 SingleCopyOrthologues_matrix.tsv - 1:1 orthologs identified between Chinese Spring IWGSC RefSeq v2.1 and Paragon GCA949126075v1.
 
+cs_count.tsv - Read counts estimated using IWGSC RefSeq v2.1 reference
+
+par_count.tsv - Read counts estimated using GCA949126075v1 reference
+
 CSvP all genes.csv - Differentially Expressed genes between Chinese Spring and Paragon using IWGSC RefSeq v2.1 reference
 
 CSvP all genes_PAR.csv - Differentially Expressed genes between Chinese Spring and Paragon using GCA949126075v1 reference
