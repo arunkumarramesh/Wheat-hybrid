@@ -17,3 +17,11 @@ all_res_CS.csv - MBASED test for allele specific expression compared to median C
 all_res_CS_0.5.csv - MBASED test for allele specific expression compared to 50:50 expected reference and alternate allele frequencies using IWGSC RefSeq v2.1 reference
 
 all_res_PAR.csv - MBASED test for allele specific expression compared to median CS allele frequency across all sites using GCA949126075v1 reference
+
+classified_McManus.csv - Regulatory classifications based on beta-binomial models implemented with MBASED for detecting ASE using IWGSC RefSeq v2.1 reference
+
+classified_limma.csv - Regulatory classifications based on linear models implemented for detecting ASE using IWGSC RefSeq v2.1 reference
+
+classified_McManus_par.csv - Regulatory classifications based on beta-binomial models implemented with MBASED for detecting ASE using GCA949126075v1 reference
+
+classified_limma_par.csv - Regulatory classifications based on linear models implemented for detecting ASE using GCA949126075v1 reference
