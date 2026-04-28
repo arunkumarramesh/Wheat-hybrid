@@ -44,5 +44,7 @@ classified_all.csv - Regulatory classifications based on intersection between be
 
 classified_all_par.csv - Regulatory classifications based on intersection between beta-binomial models implemented with MBASED and linear models for detecting ASE using GCA949126075v1 reference
 
+Regulatory_Classification.txt - Gene Regulatory Classification consistent across MBASED and linear models ASE classifcations and between mapping to IWGSC RefSeq v2.1 and GCA949126075v1 references
+
 bias_category_all_samples_inc_orig_expr.csv - Triad identification for homoeologs
 
