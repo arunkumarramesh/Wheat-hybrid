@@ -11,6 +11,9 @@
 | `kaks_output_separatevalues.txt` | Ka and Ks values from Ramírez-González et al., *Science*, DOI: 10.1126/science.aar6089. |
 | `gene.gff3` | Genomic locations of IWGSC RefSeq v2.1 genes. |
 | `bias_category_all_samples_inc_orig_expr.csv` | Triad identification and homoeolog expression-bias categories. |
+| `iwgsc_refseq_all_correspondances.csv` | v1.1 to v2.1 IWGSC RefSeq gene IDs from urgi.versailles.inrae.fr  |
+| `part_sizes.txt` | Chromosome part sizes for Chinese Spring IWGSC RefSeq v2.1 |
+| `Paragon_part_chr_sizes.txt` | Chromosome part sizes for Paragon GCA949126075v1. |
 
 ### Expression quantification files
 
