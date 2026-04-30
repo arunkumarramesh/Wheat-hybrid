@@ -396,6 +396,7 @@ for file in *_1.paired.fq.gz; do /software/STAR-2.7.10b/bin/Linux_x86_64_static/
 for file in *Aligned.sortedByCoord.out.bam; do samtools view -@ 10 -h $file | awk 'BEGIN{OFS="\t"} /^@/{print;next} {vw=""; for(i=12;i<=NF;i++) if($i~/^vW:i:/){split($i,a,":"); vw=a[3]; break} if(vw=="" || vw==1) print}' | samtools sort -@ 8 -o ${file/Aligned.sortedByCoord.out.bam/.wasp.bam} ; done
 for file in *.wasp.bam ; do java -jar /software/picard.jar  MarkDuplicates -I $file -O ${file/.wasp.bam/.ase.bam} -M ${file/.wasp.bam/_metrics.ase.txt}; done
 for file in *.ase.bam ; do java -jar /software/picard.jar BuildBamIndex -I $file; done
+for f in *.ase.bam; do echo -n "$f "; samtools stats "$f" | grep "bases mapped (cigar)"; done
 
 /software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --runMode genomeGenerate  --genomeDir star_index_par --genomeFastaFiles Paragon_part.fa  --sjdbGTFfile Triticum_aestivum_paragon.GCA949126075v1.62_scaf_part.gtf --sjdbOverhang 100 --limitGenomeGenerateRAM 48889586954
 
