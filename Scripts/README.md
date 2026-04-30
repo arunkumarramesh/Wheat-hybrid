@@ -72,8 +72,7 @@ cp /projects/wheat/orthofinder_input_2_D/OrthoFinder/Results_Apr24/Orthogroups/S
 cat SingleCopyOrthologues_matrix_A.tsv SingleCopyOrthologues_matrix_B.tsv SingleCopyOrthologues_matrix_D.tsv > SingleCopyOrthologues_matrix.tsv
 
 ```
-5. Summerise counts per gene using combine_sample_tpm.R. Script from Philippa Borrill. 
-
+5. Summarise counts per gene using [`combine_sample_tpm.R`](./combine_sample_tpm.R). Script from Philippa Borrill. 
 6. Obtain genome references
 ```
 wget https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-61/fasta/triticum_aestivum_paragon/dna_index/Triticum_aestivum_paragon.GCA949126075v1.dna.toplevel.fa.gz
@@ -437,12 +436,11 @@ for file in *.ase.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I $
 /software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I P3_RNA_MKRN250026356-1A_22VTNMLT4_L4.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O P3.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
 
 ```
+15. Run differential expression tests using [`de_wheat.R`](./de_wheat.R)
 
-15. Run differential expression tests using de_wheat.R
+16. Compare homoeolog expression bias for differentially expressed genes using [`assign_homoeolog_expression_bias_categories.R`](./assign_homoeolog_expression_bias_categories.R)
 
-16. Compare homoeolog expression bias for differentially expressed genes using assign_homoeolog_expression_bias_categories.R
-
-17. Compare allele specific expression using ase_test.R Also run mbased_cs.R, mbased_cs_0.5.R, and mbased_par.R separately, which take longer.
+17. Compare allele-specific expression using [`ase_test.R`](./ase_test.R). Also run [`mbased_cs.R`](./mbased_cs.R), [`mbased_cs_0.5.R`](./mbased_cs_0.5.R), and [`mbased_par.R`](./mbased_par.R) separately, as these take longer. 
 
 18. Process Harper et al. data
 ```
