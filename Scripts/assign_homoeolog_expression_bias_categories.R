@@ -14,7 +14,7 @@ map_unique <- iwgsc_refseq_all_correspondances %>%
   distinct(v11, v21) %>%  
   group_by(v11) %>%
   filter(n_distinct(v21) == 1) %>% 
-  slice(1) %>% 
+  dplyr::slice(1) %>% 
   ungroup()
 
 ## drop  homologies lacking a unique match for all three
@@ -734,116 +734,6 @@ plot_grid(hebbias_avecpm_plot_a,hebbias_avecpm_plot_b,hebbias_avecpm_plot_c,hebb
 dev.off()
 
 
-kaks <- read.table(file="kaks_output_separatevalues.txt")
-ks <- kaks[c(1,8:10)]
-colnames(ks) <- c("group_id","AB","AD","BD")
-ks <- ks %>%
-  select(group_id, AB, AD, BD) %>%
-  pivot_longer(cols = c(AB, AD, BD),names_to = "pair", values_to = "value")
-
-ks_de <- as.data.frame(rbind(
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "A",]$group_id,2:3],Subgenome="A"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "B",]$group_id,2:3],Subgenome="B"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "D",]$group_id,2:3],Subgenome="D"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "AB",]$group_id,2:3],Subgenome="AB"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "AD",]$group_id,2:3],Subgenome="AD"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "BD",]$group_id,2:3],Subgenome="BD"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "ABD",]$group_id,2:3],Subgenome="ABD"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "none",]$group_id,2:3],Subgenome="none")))
-colnames(ks_de) <- c("Comparison","Ks","Subgenome")
-ks_de$Ks <- as.numeric(ks_de$Ks)
-
-ks_plot <- ggplot(ks_de[ks_de$Subgenome != "none", ], aes(x = Subgenome, y = Ks, fill = Comparison)) +
-  geom_boxplot(outliers = TRUE, position = position_dodge(width = 0.75)) +
-  geom_text(data = HSD.test(aov(Ks ~ Subgenome + Comparison, data = ks_de[ks_de$Subgenome != "none", ]), c("Subgenome","Comparison"), group = TRUE)$groups %>% rownames_to_column("Subgenome") %>% as_tibble() %>% separate(Subgenome, into = c("Subgenome", "Comparison"), sep = ":", convert = TRUE),
-            aes(x = Subgenome, y = 0.5, label = groups, group = Comparison), position = position_dodge(width = 0.75), angle = 90, inherit.aes = FALSE) +
-  xlab("Subgenomes of DE genes") +
-  ylim(0,0.55)
-
-ka <- kaks[c(1,5:7)]
-colnames(ka) <- c("group_id","AB","AD","BD")
-ka <- ka %>%
-  select(group_id, AB, AD, BD) %>%
-  pivot_longer(cols = c(AB, AD, BD),names_to = "pair",values_to = "value")
-
-ka_de <- as.data.frame(rbind(
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "A",]$group_id,2:3],Subgenome="A"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "B",]$group_id,2:3],Subgenome="B"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "D",]$group_id,2:3],Subgenome="D"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "AB",]$group_id,2:3],Subgenome="AB"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "AD",]$group_id,2:3],Subgenome="AD"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "BD",]$group_id,2:3],Subgenome="BD"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "ABD",]$group_id,2:3],Subgenome="ABD"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "none",]$group_id,2:3],Subgenome="none")))
-colnames(ka_de) <- c("Comparison","Ka","Subgenome")
-ka_de$Ka <- as.numeric(ka_de$Ka)
-
-ka_plot <- ggplot(ka_de[ka_de$Subgenome != "none", ], aes(x = Subgenome, y = Ka, fill = Comparison)) +
-  geom_boxplot(outliers = TRUE, position = position_dodge(width = 0.75)) +
-  geom_text(data = HSD.test(aov(Ka ~ Subgenome + Comparison, data = ka_de[ka_de$Subgenome != "none", ]), c("Subgenome","Comparison"), group = TRUE)$groups %>% rownames_to_column("Subgenome") %>% as_tibble() %>% separate(Subgenome, into = c("Subgenome", "Comparison"), sep = ":", convert = TRUE),
-            aes(x = Subgenome, y = 0.3, label = groups, group = Comparison), position = position_dodge(width = 0.75), angle = 90, inherit.aes = FALSE) +
-  xlab("Subgenomes of DE genes") +
-  ylim(0,0.35)
-
-pdf("CSvP_over_ks_ka.pdf",height=4.5,width=7)
-plot_grid(ks_plot,ka_plot,ncol=1)
-dev.off()
-
-kaks <- read.table(file="kaks_output_separatevalues.txt")
-ks <- kaks[c(1,8:10)]
-colnames(ks) <- c("group_id","AB","AD","BD")
-ks <- ks %>%
-  select(group_id, AB, AD, BD) %>%
-  pivot_longer(cols = c(AB, AD, BD),names_to = "pair", values_to = "value")
-
-ks_de <- as.data.frame(rbind(
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "A",]$group_id,2:3],Subgenome="A"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "B",]$group_id,2:3],Subgenome="B"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "D",]$group_id,2:3],Subgenome="D"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "AB",]$group_id,2:3],Subgenome="AB"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "AD",]$group_id,2:3],Subgenome="AD"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "BD",]$group_id,2:3],Subgenome="BD"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "ABD",]$group_id,2:3],Subgenome="ABD"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "none",]$group_id,2:3],Subgenome="none")))
-colnames(ks_de) <- c("Comparison","Ks","Subgenome")
-ks_de$Ks <- as.numeric(ks_de$Ks)
-
-ks_plot <- ggplot(ks_de[ks_de$Subgenome != "none", ], aes(x = Subgenome, y = Ks, fill = Comparison)) +
-  geom_boxplot(outliers = TRUE, position = position_dodge(width = 0.75)) +
-  geom_text(data = HSD.test(aov(Ks ~ Subgenome + Comparison, data = ks_de[ks_de$Subgenome != "none", ]), c("Subgenome","Comparison"), group = TRUE)$groups %>% rownames_to_column("Subgenome") %>% as_tibble() %>% separate(Subgenome, into = c("Subgenome", "Comparison"), sep = ":", convert = TRUE),
-            aes(x = Subgenome, y = 0.5, label = groups, group = Comparison), position = position_dodge(width = 0.75), angle = 90, inherit.aes = FALSE) +
-  xlab("Subgenomes of DE genes") +
-  ylim(0,0.55)
-
-ka <- kaks[c(1,5:7)]
-colnames(ka) <- c("group_id","AB","AD","BD")
-ka <- ka %>%
-  select(group_id, AB, AD, BD) %>%
-  pivot_longer(cols = c(AB, AD, BD),names_to = "pair",values_to = "value")
-
-ka_de <- as.data.frame(rbind(
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "A",]$group_id,2:3],Subgenome="A"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "B",]$group_id,2:3],Subgenome="B"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "D",]$group_id,2:3],Subgenome="D"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "AB",]$group_id,2:3],Subgenome="AB"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "AD",]$group_id,2:3],Subgenome="AD"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "BD",]$group_id,2:3],Subgenome="BD"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "ABD",]$group_id,2:3],Subgenome="ABD"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "none",]$group_id,2:3],Subgenome="none")))
-colnames(ka_de) <- c("Comparison","Ka","Subgenome")
-ka_de$Ka <- as.numeric(ka_de$Ka)
-
-ka_plot <- ggplot(ka_de[ka_de$Subgenome != "none", ], aes(x = Subgenome, y = Ka, fill = Comparison)) +
-  geom_boxplot(outliers = TRUE, position = position_dodge(width = 0.75)) +
-  geom_text(data = HSD.test(aov(Ka ~ Subgenome + Comparison, data = ka_de[ka_de$Subgenome != "none", ]), c("Subgenome","Comparison"), group = TRUE)$groups %>% rownames_to_column("Subgenome") %>% as_tibble() %>% separate(Subgenome, into = c("Subgenome", "Comparison"), sep = ":", convert = TRUE),
-            aes(x = Subgenome, y = 0.3, label = groups, group = Comparison), position = position_dodge(width = 0.75), angle = 90, inherit.aes = FALSE) +
-  xlab("Subgenomes of DE genes") +
-  ylim(0,0.35)
-
-pdf("CSvP_under_ks_ka.pdf",height=4.5,width=7)
-plot_grid(ks_plot,ka_plot,ncol=1)
-dev.off()
-
 data <- read.csv(file="CS_PvCSxP all genes.csv",row.names = 1)
 data_sig <- data[data$adj.P.Val < 0.05 & data$logFC > 0.58,]
 data_sig2 <- data[data$adj.P.Val < 0.05 & data$logFC < -0.58,]
@@ -918,14 +808,17 @@ dev.off()
 
 sample_full_rows <- function(n_rows, p = NULL, n_cols = 3, trials = 1, seed = NULL) {
   if (!is.null(seed)) set.seed(seed)
+  
   N <- n_rows * n_cols
+  k <- round(p * N)
+  
   coords <- expand.grid(row = seq_len(n_rows), col = seq_len(n_cols))
   counts <- integer(trials)
   
   for (t in seq_len(trials)) {
     idx <- sample.int(N, size = k, replace = FALSE)
     picks <- coords[idx, , drop = FALSE]
-    row_counts <- tabulate(picks$row, nbins = n_rows)  # fast row counts
+    row_counts <- tabulate(picks$row, nbins = n_rows)
     counts[t] <- sum(row_counts == n_cols)
   }
   
@@ -934,13 +827,13 @@ sample_full_rows <- function(n_rows, p = NULL, n_cols = 3, trials = 1, seed = NU
     n_cols = n_cols,
     total_cells = N,
     sampled_cells = k,
-    full_rows_count = counts,             # length = trials
+    full_rows_count = counts,
     mean_full_rows = mean(counts)
   )
 }
 
 # 10000 trials to estimate the distribution
-res2 <- sample_full_rows(n_rows = 7892, p = 0.583, n_cols = 3, trials = 10000, seed = 123)
+res2 <- sample_full_rows(n_rows = 7892, p = 0.456, n_cols = 3, trials = 10000, seed = 123)
 mean(res2$full_rows_count)
 
 pdf(file="Number_triads_expected.pdf",height=2.5,width=4)
@@ -1179,117 +1072,6 @@ pdf(file="ABD_CS_PvCSxP.pdf",height=5,width=13)
 plot_grid(hebbias_cv_plot_d,hebbias_cv_plot_g,hebbias_avecpm_plot_d,hebbias_avecpm_plot_g,ncol=2)
 dev.off()
 
-kaks <- read.table(file="kaks_output_separatevalues.txt")
-ks <- kaks[c(1,8:10)]
-colnames(ks) <- c("group_id","AB","AD","BD")
-ks <- ks %>%
-  select(group_id, AB, AD, BD) %>%
-  pivot_longer(cols = c(AB, AD, BD),names_to = "pair", values_to = "value")
-
-ks_de <- as.data.frame(rbind(
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "A",]$group_id,2:3],Subgenome="A"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "B",]$group_id,2:3],Subgenome="B"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "D",]$group_id,2:3],Subgenome="D"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "AB",]$group_id,2:3],Subgenome="AB"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "AD",]$group_id,2:3],Subgenome="AD"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "BD",]$group_id,2:3],Subgenome="BD"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "ABD",]$group_id,2:3],Subgenome="ABD"),
-  cbind(ks[ks$group_id %in% hits[hits$from %in% "none",]$group_id,2:3],Subgenome="none")))
-colnames(ks_de) <- c("Comparison","Ks","Subgenome")
-ks_de$Ks <- as.numeric(ks_de$Ks)
-
-ks_plot <- ggplot(ks_de[ks_de$Subgenome != "none", ], aes(x = Subgenome, y = Ks, fill = Comparison)) +
-  geom_boxplot(outliers = TRUE, position = position_dodge(width = 0.75)) +
-  geom_text(data = HSD.test(aov(Ks ~ Subgenome + Comparison, data = ks_de[ks_de$Subgenome != "none", ]), c("Subgenome","Comparison"), group = TRUE)$groups %>% rownames_to_column("Subgenome") %>% as_tibble() %>% separate(Subgenome, into = c("Subgenome", "Comparison"), sep = ":", convert = TRUE),
-            aes(x = Subgenome, y = 0.5, label = groups, group = Comparison), position = position_dodge(width = 0.75), angle = 90, inherit.aes = FALSE) +
-  xlab("Subgenomes of DE genes") +
-  ylim(0,0.55)
-
-ka <- kaks[c(1,5:7)]
-colnames(ka) <- c("group_id","AB","AD","BD")
-ka <- ka %>%
-  select(group_id, AB, AD, BD) %>%
-  pivot_longer(cols = c(AB, AD, BD),names_to = "pair",values_to = "value")
-
-ka_de <- as.data.frame(rbind(
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "A",]$group_id,2:3],Subgenome="A"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "B",]$group_id,2:3],Subgenome="B"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "D",]$group_id,2:3],Subgenome="D"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "AB",]$group_id,2:3],Subgenome="AB"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "AD",]$group_id,2:3],Subgenome="AD"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "BD",]$group_id,2:3],Subgenome="BD"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "ABD",]$group_id,2:3],Subgenome="ABD"),
-  cbind(ka[ka$group_id %in% hits[hits$from %in% "none",]$group_id,2:3],Subgenome="none")))
-colnames(ka_de) <- c("Comparison","Ka","Subgenome")
-ka_de$Ka <- as.numeric(ka_de$Ka)
-
-ka_plot <- ggplot(ka_de[ka_de$Subgenome != "none", ], aes(x = Subgenome, y = Ka, fill = Comparison)) +
-  geom_boxplot(outliers = TRUE, position = position_dodge(width = 0.75)) +
-  geom_text(data = HSD.test(aov(Ka ~ Subgenome + Comparison, data = ka_de[ka_de$Subgenome != "none", ]), c("Subgenome","Comparison"), group = TRUE)$groups %>% rownames_to_column("Subgenome") %>% as_tibble() %>% separate(Subgenome, into = c("Subgenome", "Comparison"), sep = ":", convert = TRUE),
-            aes(x = Subgenome, y = 0.3, label = groups, group = Comparison), position = position_dodge(width = 0.75), angle = 90, inherit.aes = FALSE) +
-  xlab("Subgenomes of DE genes") +
-  ylim(0,0.35)
-
-pdf("CS_PvCSxP_over_ks_ka.pdf",height=4.5,width=7)
-plot_grid(ks_plot,ka_plot,ncol=1)
-dev.off()
-
-kaks <- read.table(file="kaks_output_separatevalues.txt")
-ks <- kaks[c(1,8:10)]
-colnames(ks) <- c("group_id","AB","AD","BD")
-ks <- ks %>%
-  select(group_id, AB, AD, BD) %>%
-  pivot_longer(cols = c(AB, AD, BD),names_to = "pair", values_to = "value")
-
-ks_de <- as.data.frame(rbind(
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "A",]$group_id,2:3],Subgenome="A"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "B",]$group_id,2:3],Subgenome="B"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "D",]$group_id,2:3],Subgenome="D"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "AB",]$group_id,2:3],Subgenome="AB"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "AD",]$group_id,2:3],Subgenome="AD"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "BD",]$group_id,2:3],Subgenome="BD"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "ABD",]$group_id,2:3],Subgenome="ABD"),
-  cbind(ks[ks$group_id %in% hits2[hits2$from %in% "none",]$group_id,2:3],Subgenome="none")))
-colnames(ks_de) <- c("Comparison","Ks","Subgenome")
-ks_de$Ks <- as.numeric(ks_de$Ks)
-
-ks_plot <- ggplot(ks_de[ks_de$Subgenome != "none", ], aes(x = Subgenome, y = Ks, fill = Comparison)) +
-  geom_boxplot(outliers = TRUE, position = position_dodge(width = 0.75)) +
-  geom_text(data = HSD.test(aov(Ks ~ Subgenome + Comparison, data = ks_de[ks_de$Subgenome != "none", ]), c("Subgenome","Comparison"), group = TRUE)$groups %>% rownames_to_column("Subgenome") %>% as_tibble() %>% separate(Subgenome, into = c("Subgenome", "Comparison"), sep = ":", convert = TRUE),
-            aes(x = Subgenome, y = 0.5, label = groups, group = Comparison), position = position_dodge(width = 0.75), angle = 90, inherit.aes = FALSE) +
-  xlab("Subgenomes of DE genes") +
-  ylim(0,0.55)
-
-ka <- kaks[c(1,5:7)]
-colnames(ka) <- c("group_id","AB","AD","BD")
-ka <- ka %>%
-  select(group_id, AB, AD, BD) %>%
-  pivot_longer(cols = c(AB, AD, BD),names_to = "pair",values_to = "value")
-
-ka_de <- as.data.frame(rbind(
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "A",]$group_id,2:3],Subgenome="A"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "B",]$group_id,2:3],Subgenome="B"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "D",]$group_id,2:3],Subgenome="D"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "AB",]$group_id,2:3],Subgenome="AB"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "AD",]$group_id,2:3],Subgenome="AD"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "BD",]$group_id,2:3],Subgenome="BD"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "ABD",]$group_id,2:3],Subgenome="ABD"),
-  cbind(ka[ka$group_id %in% hits2[hits2$from %in% "none",]$group_id,2:3],Subgenome="none")))
-colnames(ka_de) <- c("Comparison","Ka","Subgenome")
-ka_de$Ka <- as.numeric(ka_de$Ka)
-
-ka_plot <- ggplot(ka_de[ka_de$Subgenome != "none", ], aes(x = Subgenome, y = Ka, fill = Comparison)) +
-  geom_boxplot(outliers = TRUE, position = position_dodge(width = 0.75)) +
-  geom_text(data = HSD.test(aov(Ka ~ Subgenome + Comparison, data = ka_de[ka_de$Subgenome != "none", ]), c("Subgenome","Comparison"), group = TRUE)$groups %>% rownames_to_column("Subgenome") %>% as_tibble() %>% separate(Subgenome, into = c("Subgenome", "Comparison"), sep = ":", convert = TRUE),
-            aes(x = Subgenome, y = 0.3, label = groups, group = Comparison), position = position_dodge(width = 0.75), angle = 90, inherit.aes = FALSE) +
-  xlab("Subgenomes of DE genes") +
-  ylim(0,0.35)
-
-pdf("CS_PvCSxP_under_ks_ka.pdf",height=4.5,width=7)
-plot_grid(ks_plot,ka_plot,ncol=1)
-dev.off()
-
-
 ## cannot do similar anayses with ASE genes as too few are in triads
 
 data <- read.csv(file="all_res_CS.csv")
@@ -1308,7 +1090,7 @@ dim(homologies_kept)
 
 ## but get bias estimates for the ASE categories
 
-classified <- read.csv(file="classified_McManus.csv")
+classified <- read.csv(file="classified_all.csv")
 ids <- classified$gene
 homologies_kept <- homologies %>%
   mutate(across(c(A, B, D), as.character)) %>%
@@ -1335,7 +1117,7 @@ mk_df <- function(x, y, pair){
 df_compare_subgenomes <- bind_rows(mk_df(homologies_kept$A_cat, homologies_kept$B_cat, "A vs B"),mk_df(homologies_kept$A_cat, homologies_kept$D_cat, "A vs D"),mk_df(homologies_kept$B_cat, homologies_kept$D_cat, "B vs D")) %>%
   mutate(x_cat = factor(x_cat, levels = lev),y_cat = factor(y_cat, levels = lev))
 
-pdf(file="traid_ase_bias_McManus.pdf",height=4,width=7)
+pdf(file="traid_ase_bias.pdf",height=4,width=7)
 ggplot(df_compare_subgenomes, aes(x = y_cat, y = x_cat, fill = n)) +
   geom_tile() +
   geom_text(aes(label = n), size = 3) +
@@ -1391,101 +1173,10 @@ homologies_McManus_plot_b <- ggplot(data = bias_categories_ase_sub,aes(x = cat_c
   labs(title=paste("n=",nrow(bias_categories_ase_sub)," triads",sep="")) +
   theme(axis.text.y = element_markdown(),strip.placement = "outside",strip.background = element_blank())
 
-pdf(file="triad_ase_McManus_cv.pdf",height=2.5,width=4.5)
+pdf(file="triad_ase_cv.pdf",height=2,width=4.5)
 homologies_McManus_plot_a
 dev.off()
 
-pdf(file="triad_ase_McManus_tpm.pdf",height=2.5,width=4.5)
+pdf(file="triad_ase_tpm.pdf",height=2,width=4.5)
 homologies_McManus_plot_b
-dev.off()
-
-classified <- read.csv(file="classified_limma.csv")
-ids <- classified$gene
-homologies_kept <- homologies %>%
-  mutate(across(c(A, B, D), as.character)) %>%
-  filter(A %in% ids, B %in% ids, D %in% ids)
-dim(homologies_kept)
-cat_map <- setNames(classified$category, classified$gene)
-homologies_kept <- homologies_kept %>%
-  mutate(A_cat = cat_map[A],B_cat = cat_map[B],D_cat = cat_map[D])
-homologies_kept <- homologies_kept[-c(5:9)]
-colnames(homologies_kept)[1:3] <- c("A_id","B_id","C_id")
-
-lev <- c("Ambiguous","Cis + trans","Cis × trans","Cis only","Compensatory","Conserved","Trans only")
-ital <- function(x){
-  x <- gsub("\\b[Cc]is\\b","<i>cis</i>",x,perl=TRUE)
-  x <- gsub("\\b[Tt]rans\\b","<i>trans</i>",x,perl=TRUE)
-  x
-}
-
-mk_df <- function(x, y, pair){
-  as.data.frame(table(x, y)) %>%
-    dplyr::rename(x_cat = x, y_cat = y, n = Freq) %>%
-    mutate(pair = pair)
-}
-df_compare_subgenomes <- bind_rows(mk_df(homologies_kept$A_cat, homologies_kept$B_cat, "A vs B"),mk_df(homologies_kept$A_cat, homologies_kept$D_cat, "A vs D"),mk_df(homologies_kept$B_cat, homologies_kept$D_cat, "B vs D")) %>%
-  mutate(x_cat = factor(x_cat, levels = lev),y_cat = factor(y_cat, levels = lev))
-
-pdf(file="traid_ase_bias_limma.pdf",height=4,width=7)
-ggplot(df_compare_subgenomes, aes(x = y_cat, y = x_cat, fill = n)) +
-  geom_tile() +
-  geom_text(aes(label = n), size = 3) +
-  facet_wrap(~ pair, nrow = 1) +
-  scale_fill_gradient(low = "white", high = "steelblue", name = "Count") +
-  labs(x = "", y = "",
-       title = "") +
-  theme_minimal(base_size = 12) +
-  theme(
-    axis.text.x = element_markdown(angle = 90, hjust = 1),
-    axis.text.y = element_markdown()
-  ) +
-  scale_x_discrete(labels = ital) +
-  scale_y_discrete(labels = ital) +
-  coord_equal()
-dev.off()
-
-bias_categories_ase_sub <- bias_categories[bias_categories$group_id %in% homologies_kept$group_id,]
-bias_categories_ase_sub <- left_join(bias_categories_ase_sub,homologies_kept,by="group_id")
-bias_categories_ase_sub <- bias_categories_ase_sub[!(bias_categories_ase_sub$A_cat %in% "Ambiguous"),]
-bias_categories_ase_sub <- bias_categories_ase_sub[!(bias_categories_ase_sub$B_cat %in% "Ambiguous"),]
-bias_categories_ase_sub <- bias_categories_ase_sub[!(bias_categories_ase_sub$D_cat %in% "Ambiguous"),]
-bias_categories_ase_sub <- bias_categories_ase_sub %>%
-  rowwise() %>%
-  mutate(cat_canonical = paste(as.character(sort(factor(c(A_cat, B_cat, D_cat), levels = c("Cis only", "Cis + trans", "Cis × trans", "Trans only", "Compensatory", "Conserved")))),collapse = ",")) %>%
-  ungroup()
-
-label_cis_trans_md <- function(x) {
-  str_replace_all(x,regex("\\b(cis|trans)\\b", ignore_case = TRUE),~ paste0("<i>", .x, "</i>"))
-}
-
-summary(aov(CV ~ cat_canonical, data = bias_categories_ase_sub))
-homologies_limma_plot_a <- ggplot(data = bias_categories_ase_sub,aes(x = cat_canonical, y = CV)) +
-  geom_boxplot() +
-  xlab("") +
-  geom_text(data = HSD.test(aov(CV ~ cat_canonical, data = bias_categories_ase_sub),"cat_canonical", group = TRUE)$groups %>% rownames_to_column("cat_canonical"),
-            aes(cat_canonical, y = 1.3, label = groups),vjust = 0, angle = 0) +
-  coord_flip() +
-  scale_x_discrete(labels = label_cis_trans_md) +
-  labs(title=paste("n=",nrow(bias_categories_ase_sub)," triads",sep="")) +
-  theme(axis.text.y = element_markdown(),strip.placement = "outside",strip.background = element_blank())
-
-summary(aov(triad_tpm ~ cat_canonical, data = bias_categories_ase_sub))
-homologies_limma_plot_b <- ggplot(data = bias_categories_ase_sub,aes(x = cat_canonical, y = triad_tpm)) +
-  geom_boxplot() +
-  xlab("") +
-  ylab("Triad TPM") +
-  ylim(0,180) +
-  geom_text(data = HSD.test(aov(triad_tpm ~ cat_canonical, data = bias_categories_ase_sub),"cat_canonical", group = TRUE)$groups %>% rownames_to_column("cat_canonical"),
-            aes(cat_canonical, y = 120, label = groups),vjust = 0, angle = 0) +
-  coord_flip() +
-  scale_x_discrete(labels = label_cis_trans_md) +
-  labs(title=paste("n=",nrow(bias_categories_ase_sub)," triads",sep="")) +
-  theme(axis.text.y = element_markdown(),strip.placement = "outside",strip.background = element_blank())
-
-pdf(file="triad_ase_limma_cv.pdf",height=2.5,width=4.5)
-homologies_limma_plot_a
-dev.off()
-
-pdf(file="triad_ase_limma_tpm.pdf",height=2.5,width=4.5)
-homologies_limma_plot_b
 dev.off()

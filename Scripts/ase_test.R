@@ -18,7 +18,6 @@ library(cowplot)
 library(ggtext)
 library(edgeR)
 library(factoextra)
-library(EnhancedVolcano)
 library(goseq)
 library(ggpubr)
 library(scales)
@@ -128,7 +127,7 @@ pdf(file="ref_prop_parents_PAR.pdf",height=2.5,width=11)
 ref_prop_parents_plot
 dev.off()
 
-pdf(file="ref_prop.pdf_PAR",height=2.5,width=9)
+pdf(file="ref_prop.pdf_PAR.pdf",height=2.5,width=9)
 ref_prop_plot
 dev.off()
 
@@ -322,10 +321,6 @@ dev.off()
 
 testdat2 <- testdat2[!rownames(testdat2) %in% rownames(ase_poi_genes2),]
 
-pdf("ase_persample_delta.pdf",height=3.5,width=4)
-Heatmap(testdat2, name = "delta", show_row_names = FALSE, use_raster = F)
-dev.off()
-
 aseout <- all_res %>%
   reframe(n_pos = sum(adjpval < 0.05 & delta >=  0.58, na.rm = TRUE), n_neg = sum(adjpval < 0.05 & delta <= -0.58, na.rm = TRUE), .by = gene) %>%
   mutate(hit = (n_pos >= 4 & n_neg == 0) | (n_neg >= 4 & n_pos == 0), direction = case_when(hit & n_pos >= 4 ~ "positive", hit & n_neg >= 4 ~ "negative", TRUE ~ NA_character_)) %>%
@@ -362,10 +357,9 @@ counts_HPT <- as.data.frame(as.table(counts_HPT))
 pdf("Overall_patterns.pdf",height=3.5,width=5)
 ggplot(counts_HPT, aes(x = Var1, y = Freq, fill = Var2)) +
   geom_col(position = "stack") +
+  geom_text(aes(label = paste0(round(100 * Freq / ave(Freq, Var1, FUN = sum), 1), "%")),position = position_stack(vjust = 0.5),size = 3) +
   labs(x = NULL, y = "Number of Genes", fill = "") +
-  scale_x_discrete(
-    breaks = c("H", "P", "T"), 
-    labels = c(H = "ASE", P = "DE between\nparents", T = "DE in parents\n& hybrids") ) +
+  scale_x_discrete(breaks = c("H", "P", "T"),labels = c(H = "ASE",P = "DE between\nparents",T = "DE in parents\n& hybrids")) +
   theme_minimal(base_size = 12)
 dev.off()
 
@@ -503,10 +497,6 @@ dev.off()
 
 fit$design
 
-pdf("ASE_Volcano.pdf",height=5,width=7)
-EnhancedVolcano(asetest_pvals, lab = "", x = 'logFC', y = 'adj.P.Val', pCutoff = 0.05, FCcutoff = 1, title = "Alt vs Ref", subtitle = "",  ylim = c(0,6), xlab = bquote(~Log[2]~ 'fold change'), ylab = bquote(-Log[10]~ 'FDR'))
-dev.off()
-
 asetest_pvals_sub <- asetest_pvals[c(1,5)]
 asetest_pvals_sub$Sig <- F
 asetest_pvals_sub[(abs(asetest_pvals_sub$logFC)> 0.58) & (asetest_pvals_sub$adj.P.Val < 0.05), ]$Sig  <- T
@@ -543,10 +533,9 @@ counts_HPT <- as.data.frame(as.table(counts_HPT))
 pdf("Overall_patterns_limma.pdf",height=3.5,width=5)
 ggplot(counts_HPT, aes(x = Var1, y = Freq, fill = Var2)) +
   geom_col(position = "stack") +
+  geom_text(aes(label = paste0(round(100 * Freq / ave(Freq, Var1, FUN = sum), 1), "%")),position = position_stack(vjust = 0.5),size = 3) +
   labs(x = NULL, y = "Number of Genes", fill = "") +
-  scale_x_discrete(
-    breaks = c("H", "P", "T"), 
-    labels = c(H = "ASE", P = "DE between\nparents", T = "DE in parents\n& hybrids") ) +
+  scale_x_discrete(breaks = c("H", "P", "T"), labels = c(H = "ASE", P = "DE between\nparents", T = "DE in parents\n& hybrids")) +
   theme_minimal(base_size = 12)
 dev.off()
 
@@ -612,54 +601,40 @@ p_tab <- ggplot(df_tab, aes(x = y_cat, y = x_cat, fill = n)) +
   scale_fill_gradient(low = "white", high = "steelblue") +
   scale_x_discrete(labels = ital_words) +
   scale_y_discrete(labels = ital_words) +
-  labs(y = "McManus et al. classification", x = "limma classification", fill = "Count", title = "") +
+  labs(y = "Beta-binomial classification", x = "Linear model classification", fill = "Count", title = "") +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = element_markdown(angle = 30, hjust = 1),axis.text.y = element_markdown())
 
 ggsave("category_crosstab_heatmap.pdf", p_tab, width = 7, height = 4, device = cairo_pdf)
 
-pdf(file="Trans_McManus.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_McManus[classified_McManus$category %in% "Trans only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Trans only Genes")
-dev.off()
+classified_all <- inner_join(classified_McManus,classified_limma,by="gene")
+dim(classified_all)
 
-pdf(file="Trans_limma.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_limma[classified_limma$category %in% "Trans only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Trans only Genes")
-dev.off()
+classified_all <- classified_all %>%
+  mutate(category = ifelse(category.x == category.y, category.x, "Ambiguous"))
+classified_all <- classified_all[c(1,4)]
+counts_all <- as.data.frame(table(classified_all$category))
+names(counts_all) <- c("category", "count")
+props_all <- prop.table(table(classified_all$category))
+df_all <- counts_all %>%
+  mutate(prop = as.numeric(props_all[as.character(category)]), category = factor(category, levels = category))
+write.csv(classified_all,file="classified_all.csv",row.names = F)
 
-pdf(file="Trans_limma_noextremes.pdf",width=4,height=2.5)
-Heatmap(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) [rownames(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) ) %in% classified_limma[classified_limma$category %in% "Trans only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Trans only Genes")
-dev.off()
-
-pdf(file="Cis_McManus.pdf",width=4,height=2.5)
-Heatmap(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) [rownames(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) ) %in% classified_McManus[classified_McManus$category %in% "Cis only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis only Genes")
-dev.off()
-
-pdf(file="Cis_limma.pdf",width=4,height=2.5)
-Heatmap(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) [rownames(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) ) %in% classified_limma[classified_limma$category %in% "Cis only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis only Genes")
-dev.off()
-
-pdf(file="Cis_plus_trans_McManus.pdf",width=4,height=2.5)
-Heatmap(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) [rownames(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) ) %in% classified_McManus[classified_McManus$category %in% "Cis + trans",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis + trans Genes")
-dev.off()
-
-pdf(file="Cis_plus_trans_limma.pdf",width=4,height=2.5)
-Heatmap(testdat2[rownames(testdat2 ) %in% classified_limma[classified_limma$category %in% "Cis + trans",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis + trans Genes")
-dev.off()
-
-pdf(file="Cis_mult_trans_McManus.pdf",width=4,height=2.5)
-Heatmap(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) [rownames(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) ) %in% classified_McManus[classified_McManus$category %in% "Cis × trans",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis × trans Genes")
-dev.off()
-
-pdf(file="Cis_mult_trans_limma.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_limma[classified_limma$category %in% "Cis × trans",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis x trans Genes")
-dev.off()
-
-pdf(file="Compensatory_McManus.pdf",width=4,height=2.5)
-Heatmap(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) [rownames(as.matrix(testdat2[apply(testdat2, 1, function(x) all(x >= -20 & x <= 20)), ]) ) %in% classified_McManus[classified_McManus$category %in% "Compensatory",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Compensatory Genes")
-dev.off()
-
-pdf(file="Compensatory_limma.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_limma[classified_limma$category %in% "Compensatory",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Compensatory Genes")
+pdf(file="McManus_limma_classification.pdf",height=3.5,width=4)
+ggplot(df_all, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_limma))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
 dev.off()
 
 all_go_subset <- subset(all_go, Gene %in% classified_McManus$gene)
@@ -1117,10 +1092,6 @@ dev.off()
 
 testdat2 <- testdat2[!rownames(testdat2) %in% rownames(ase_poi_genes2),]
 
-pdf("ase_persample_delta_par.pdf",height=3.5,width=4)
-Heatmap(testdat2, name = "delta", show_row_names = FALSE, use_raster = F)
-dev.off()
-
 aseout <- all_res %>%
   reframe(n_pos = sum(adjpval < 0.05 & delta >=  0.58, na.rm = TRUE), n_neg = sum(adjpval < 0.05 & delta <= -0.58, na.rm = TRUE), .by = gene) %>%
   mutate(hit = (n_pos >= 4 & n_neg == 0) | (n_neg >= 4 & n_pos == 0), direction = case_when(hit & n_pos >= 4 ~ "positive", hit & n_neg >= 4 ~ "negative", TRUE ~ NA_character_)) %>%
@@ -1157,10 +1128,9 @@ counts_HPT <- as.data.frame(as.table(counts_HPT))
 pdf("Overall_patterns_PAR.pdf",height=3.5,width=5)
 ggplot(counts_HPT, aes(x = Var1, y = Freq, fill = Var2)) +
   geom_col(position = "stack") +
+  geom_text(aes(label = paste0(round(100 * Freq / ave(Freq, Var1, FUN = sum), 1), "%")),position = position_stack(vjust = 0.5),size = 3) +
   labs(x = NULL, y = "Number of Genes", fill = "") +
-  scale_x_discrete(
-    breaks = c("H", "P", "T"), 
-    labels = c(H = "ASE", P = "DE between\nparents", T = "DE in parents\n& hybrids") ) +
+  scale_x_discrete(breaks = c("H", "P", "T"), labels = c(H = "ASE", P = "DE between\nparents", T = "DE in parents\n& hybrids")) +
   theme_minimal(base_size = 12)
 dev.off()
 
@@ -1299,10 +1269,6 @@ dev.off()
 
 fit$design
 
-pdf("ASE_Volcano_par.pdf",height=5,width=7)
-EnhancedVolcano(asetest_pvals, lab = "", x = 'logFC', y = 'adj.P.Val', pCutoff = 0.05, FCcutoff = 1, title = "Alt vs Ref", subtitle = "",  ylim = c(0,6), xlab = bquote(~Log[2]~ 'fold change'), ylab = bquote(-Log[10]~ 'FDR'))
-dev.off()
-
 asetest_pvals_sub <- asetest_pvals[c(1,5)]
 asetest_pvals_sub$Sig <- F
 asetest_pvals_sub[(abs(asetest_pvals_sub$logFC)> 0.58) & (asetest_pvals_sub$adj.P.Val < 0.05), ]$Sig  <- T
@@ -1339,10 +1305,9 @@ counts_HPT <- as.data.frame(as.table(counts_HPT))
 pdf("Overall_patterns_limma_par.pdf",height=3.5,width=5)
 ggplot(counts_HPT, aes(x = Var1, y = Freq, fill = Var2)) +
   geom_col(position = "stack") +
+  geom_text(aes(label = paste0(round(100 * Freq / ave(Freq, Var1, FUN = sum), 1), "%")),position = position_stack(vjust = 0.5),size = 3) +
   labs(x = NULL, y = "Number of Genes", fill = "") +
-  scale_x_discrete(
-    breaks = c("H", "P", "T"), 
-    labels = c(H = "ASE", P = "DE between\nparents", T = "DE in parents\n& hybrids") ) +
+  scale_x_discrete(breaks = c("H", "P", "T"), labels = c(H = "ASE", P = "DE between\nparents", T = "DE in parents\n& hybrids")) +
   theme_minimal(base_size = 12)
 dev.off()
 
@@ -1393,8 +1358,6 @@ ggplot(df_limma, aes(x = category, y = prop, fill = category)) +
 dev.off()
 
 classified_all <- inner_join(classified_McManus,classified_limma,by="gene")
-dim(classified_all)
-
 df_tab  <- as.data.frame(table(classified_all$category.x, classified_all$category.y))
 names(df_tab) <- c("x_cat", "y_cat", "n")
 ital_words <- function(x) {
@@ -1414,44 +1377,33 @@ p_tab <- ggplot(df_tab, aes(x = y_cat, y = x_cat, fill = n)) +
 
 ggsave("category_crosstab_heatmap_par.pdf", p_tab, width = 7, height = 4, device = cairo_pdf)
 
-pdf(file="Trans_McManus_par.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_McManus[classified_McManus$category %in% "Trans only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Trans only Genes")
-dev.off()
+classified_all <- inner_join(classified_McManus,classified_limma,by="gene")
+dim(classified_all)
+classified_all <- classified_all %>%
+  mutate(category = ifelse(category.x == category.y, category.x, "Ambiguous"))
+classified_all <- classified_all[c(1,4)]
+counts_all <- as.data.frame(table(classified_all$category))
+names(counts_all) <- c("category", "count")
+props_all <- prop.table(table(classified_all$category))
+df_all <- counts_all %>%
+  mutate(prop = as.numeric(props_all[as.character(category)]), category = factor(category, levels = category))
+write.csv(classified_all,file="classified_all_par.csv",row.names = F)
 
-pdf(file="Trans_limma_par.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_limma[classified_limma$category %in% "Trans only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Trans only Genes")
-dev.off()
-
-pdf(file="Cis_McManus_par.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2) %in% classified_McManus[classified_McManus$category %in% "Cis only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis only Genes")
-dev.off()
-
-pdf(file="Cis_limma_par.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2) %in% classified_limma[classified_limma$category %in% "Cis only",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis only Genes")
-dev.off()
-
-pdf(file="Cis_plus_trans_McManus_par.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2) %in% classified_McManus[classified_McManus$category %in% "Cis + trans",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis + trans Genes")
-dev.off()
-
-pdf(file="Cis_plus_trans_limma_par.pdf",width=4,height=2.5)
-Heatmap(testdat2[rownames(testdat2 ) %in% classified_limma[classified_limma$category %in% "Cis + trans",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis + trans Genes")
-dev.off()
-
-pdf(file="Cis_mult_trans_McManus_par.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_McManus[classified_McManus$category %in% "Cis × trans",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis x trans Genes")
-dev.off()
-
-pdf(file="Cis_mult_trans_limma_par.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_limma[classified_limma$category %in% "Cis × trans",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Cis x trans Genes")
-dev.off()
-
-pdf(file="Compensatory_McManus_par.pdf",width=4,height=2.5)
-Heatmap(testdat2[rownames(testdat2 ) %in% classified_McManus[classified_McManus$category %in% "Compensatory",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Compensatory Genes")
-dev.off()
-
-pdf(file="Compensatory_limma_par.pdf",width=4,height=2.5)
-Heatmap(testdat2 [rownames(testdat2 ) %in% classified_limma[classified_limma$category %in% "Compensatory",]$gene,],show_row_names = F, cluster_columns = F, name = "delta",  use_raster = F,row_title = "Compensatory Genes")
+pdf(file="McManus_limma_classification_par.pdf",height=3.5,width=4)
+ggplot(df_all, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_limma))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
 dev.off()
 
 ## files for 1:1 mapping
@@ -1464,80 +1416,17 @@ SingleCopyOrthologues_unique <- SingleCopyOrthologues %>%
   filter(nV2 == 1, nV3 == 1) %>%
   select(-nV2, -nV3)
 
-classified_McManus <- read.csv(file="classified_McManus.csv")
-classified_McManus <- classified_McManus[classified_McManus$gene %in% SingleCopyOrthologues_unique$V3,]
-classified_McManus_par <- read.csv(file="classified_McManus_par.csv")
-classified_McManus_par <- classified_McManus_par[classified_McManus_par$gene %in% SingleCopyOrthologues_unique$V2,]
-colnames(classified_McManus)[1] <- "V3"
-colnames(classified_McManus_par)[1] <- "V2"
-classified_McManus <- left_join(classified_McManus,SingleCopyOrthologues_unique[2:3],by="V3")
-classified_McManus <- inner_join(classified_McManus,classified_McManus_par,by="V2")
-table(classified_McManus$category.x,classified_McManus$category.y)
-classified_McManus <- classified_McManus[classified_McManus$category.x == classified_McManus$category.y,]
-table(classified_McManus$category.x,classified_McManus$category.y)
+classified_all <- read.csv(file="classified_all.csv")
+classified_all <- classified_all[classified_all$gene %in% SingleCopyOrthologues_unique$V3,]
+classified_all_par <- read.csv(file="classified_all_par.csv")
+classified_all_par <- classified_all_par[classified_all_par$gene %in% SingleCopyOrthologues_unique$V2,]
+colnames(classified_all)[1] <- "V3"
+colnames(classified_all_par)[1] <- "V2"
+classified_all <- left_join(classified_all,SingleCopyOrthologues_unique[2:3],by="V3")
+classified_all <- inner_join(classified_all,classified_all_par,by="V2")
+table(classified_all$category.x,classified_all$category.y)
 
-counts_McManus <- as.data.frame(table(classified_McManus$category.x))
-names(counts_McManus) <- c("category", "count")
-props_McManus <- prop.table(table(classified_McManus$category.x))
-df_McManus <- counts_McManus %>%
-  mutate(prop = as.numeric(props_McManus[as.character(category)]), category = factor(category, levels = category))
-
-pdf(file="McManus_classification_both_ref.pdf",height=3.5,width=4)
-ggplot(df_McManus, aes(x = category, y = prop, fill = category)) +
-  geom_col() +
-  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
-  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
-  scale_fill_manual(values = c("#66C2A5","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
-  scale_x_discrete(labels = function(x) {
-    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
-    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
-    x
-  }) +
-  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_McManus))) +
-  theme_minimal(base_size = 12) +
-  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
-  coord_cartesian(clip = "off")
-dev.off()
-
-classified_limma <- read.csv(file="classified_limma.csv")
-classified_limma <- classified_limma[classified_limma$gene %in% SingleCopyOrthologues_unique$V3,]
-classified_limma_par <- read.csv(file="classified_limma_par.csv")
-classified_limma_par <- classified_limma_par[classified_limma_par$gene %in% SingleCopyOrthologues_unique$V2,]
-colnames(classified_limma)[1] <- "V3"
-colnames(classified_limma_par)[1] <- "V2"
-classified_limma <- left_join(classified_limma,SingleCopyOrthologues_unique[2:3],by="V3")
-classified_limma <- inner_join(classified_limma,classified_limma_par,by="V2")
-table(classified_limma$category.x,classified_limma$category.y)
-classified_limma <- classified_limma[classified_limma$category.x == classified_limma$category.y,]
-table(classified_limma$category.x,classified_limma$category.y)
-
-counts_limma <- as.data.frame(table(classified_limma$category.x))
-names(counts_limma) <- c("category", "count")
-props_limma <- prop.table(table(classified_limma$category.x))
-df_limma <- counts_limma %>%
-  mutate(prop = as.numeric(props_limma[as.character(category)]), category = factor(category, levels = category))
-
-pdf(file="limma_classification_both_ref.pdf",height=3.5,width=4)
-ggplot(df_limma, aes(x = category, y = prop, fill = category)) +
-  geom_col() +
-  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
-  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
-  scale_fill_manual(values = c("#66C2A5","#8DA0CB","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
-  scale_x_discrete(labels = function(x) {
-    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
-    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
-    x
-  }) +
-  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_limma))) +
-  theme_minimal(base_size = 12) +
-  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
-  coord_cartesian(clip = "off")
-dev.off()
-
-classified_all <- inner_join(classified_McManus,classified_limma,by="V3")
-dim(classified_all)
-
-df_tab  <- as.data.frame(table(classified_all$category.x.x, classified_all$category.x.y))
+df_tab  <- as.data.frame(table(classified_all$category.x, classified_all$category.y))
 names(df_tab) <- c("x_cat", "y_cat", "n")
 ital_words <- function(x) {
   x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
@@ -1550,11 +1439,41 @@ p_tab <- ggplot(df_tab, aes(x = y_cat, y = x_cat, fill = n)) +
   scale_fill_gradient(low = "white", high = "steelblue") +
   scale_x_discrete(labels = ital_words) +
   scale_y_discrete(labels = ital_words) +
-  labs(y = "McManus et al. classification", x = "limma classification", fill = "Count", title = "") +
+  labs(y = "CS-based classification", x = "Paragon-based classification", fill = "Count", title = "") +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = element_markdown(angle = 30, hjust = 1),axis.text.y = element_markdown())
 
 ggsave("category_crosstab_heatmap_both_ref.pdf", p_tab, width = 7, height = 4, device = cairo_pdf)
+
+classified_all <- classified_all[classified_all$category.x == classified_all$category.y,]
+table(classified_all$category.x,classified_all$category.y)
+
+counts_all <- as.data.frame(table(classified_all$category.x))
+names(counts_all) <- c("category", "count")
+props_all <- prop.table(table(classified_all$category.x))
+df_all <- counts_all %>%
+  mutate(prop = as.numeric(props_all[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="Classification_both_ref.pdf",height=3.5,width=4)
+ggplot(df_all, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_all))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
+dev.off()
+
+classified_all <- classified_all[c(1,3,4)]
+colnames(classified_all) <- c("CS_reference","Paragon_reference","Category")
+write.table(classified_all,file="Regulatory_Classification.txt",row.names = F)
 
 all_res <- read.csv(file="all_res_CS.csv")
 all_res <- all_res[all_res$gene %in% SingleCopyOrthologues_unique$V3,]
@@ -1646,22 +1565,12 @@ colnames(cpm_nolog_relative) <- sub("_.*","",colnames(cpm_nolog_relative))
 colnames(cpm_nolog) <- sub("_.*","",colnames(cpm_nolog))
 colnames(cpm_nolog) <- sub("_.*","",colnames(cpm_nolog))
 colnames(cpm_nolog_relative) <- gsub("PXCS2","PxCS2",colnames(cpm_nolog_relative))
-classified_McManus <- read.csv(file="classified_McManus.csv")
-classified_limma <- read.csv(file="classified_limma.csv")
-pdf(file="Trans_cpm_McManus.pdf",width=4,height=2.5)
-Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_McManus[classified_McManus$category == "Trans only",]$gene,],
+pdf(file="Trans_cpm.pdf",width=4,height=2.5)
+Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_all[classified_all$category.x == "Trans only",]$V3,],
         show_row_names = F, cluster_columns = T, name = "Scaled CPM",  use_raster = F,row_title = "Trans only Genes")
 dev.off()
-pdf(file="Trans_cpm_limma.pdf",width=4,height=2.5)
-Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_limma[classified_limma$category == "Trans only",]$gene,],
-        show_row_names = F, cluster_columns = T, name = "Scaled CPM",  use_raster = F,row_title = "Trans only Genes")
-dev.off()
-pdf(file="Cis_cpm_McManus.pdf",width=4,height=2.5)
-Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_McManus[classified_McManus$category == "Cis only",]$gene,],
-        show_row_names = F, cluster_columns = T, name = "Scaled CPM",  use_raster = F,row_title = "Cis only Genes")
-dev.off()
-pdf(file="Cis_cpm_limma.pdf",width=4,height=2.5)
-Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_limma[classified_limma$category == "Cis only",]$gene,],
+pdf(file="Cis_cpm.pdf",width=4,height=2.5)
+Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_all[classified_all$category.x == "Cis only",]$V3,],
         show_row_names = F, cluster_columns = T, name = "Scaled CPM",  use_raster = F,row_title = "Cis only Genes")
 dev.off()
 
@@ -1685,22 +1594,12 @@ colnames(cpm_nolog_relative) <- sub("_.*","",colnames(cpm_nolog_relative))
 colnames(cpm_nolog) <- sub("_.*","",colnames(cpm_nolog))
 colnames(cpm_nolog) <- sub("_.*","",colnames(cpm_nolog))
 colnames(cpm_nolog_relative) <- gsub("PXCS2","PxCS2",colnames(cpm_nolog_relative))
-classified_McManus <- read.csv(file="classified_McManus_par.csv")
-classified_limma <- read.csv(file="classified_limma_par.csv")
-pdf(file="Trans_cpm_McManus_par.pdf",width=4,height=2.5)
-Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_McManus[classified_McManus$category == "Trans only",]$gene,],
+pdf(file="Trans_cpm_par.pdf",width=4,height=2.5)
+Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_all[classified_all$category.y == "Trans only",]$V2,],
         show_row_names = F, cluster_columns = T, name = "Scaled CPM",  use_raster = F,row_title = "Trans only Genes")
 dev.off()
-pdf(file="Trans_cpm_limma_par.pdf",width=4,height=2.5)
-Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_limma[classified_limma$category == "Trans only",]$gene,],
-        show_row_names = F, cluster_columns = T, name = "Scaled CPM",  use_raster = F,row_title = "Trans only Genes")
-dev.off()
-pdf(file="Cis_cpm_McManus_par.pdf",width=4,height=2.5)
-Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_McManus[classified_McManus$category == "Cis only",]$gene,],
-        show_row_names = F, cluster_columns = T, name = "Scaled CPM",  use_raster = F,row_title = "Cis only Genes")
-dev.off()
-pdf(file="Cis_cpm_limma_par.pdf",width=4,height=2.5)
-Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_limma[classified_limma$category == "Cis only",]$gene,],
+pdf(file="Cis_cpm_par.pdf",width=4,height=2.5)
+Heatmap(cpm_nolog_relative[rownames(cpm_nolog_relative) %in% classified_all[classified_all$category.y == "Cis only",]$V2,],
         show_row_names = F, cluster_columns = T, name = "Scaled CPM",  use_raster = F,row_title = "Cis only Genes")
 dev.off()
 
@@ -1727,12 +1626,10 @@ colnames(cpm_nolog_relative) <- sub("_.*","",colnames(cpm_nolog_relative))
 colnames(cpm_nolog) <- sub("_.*","",colnames(cpm_nolog))
 colnames(cpm_nolog) <- sub("_.*","",colnames(cpm_nolog))
 colnames(cpm_nolog_relative) <- gsub("PXCS2","PxCS2",colnames(cpm_nolog_relative))
-classified_McManus <- read.csv(file="classified_McManus.csv")
-classified_limma <- read.csv(file="classified_limma.csv")
 
-D <- cpm_nolog[rownames(cpm_nolog) %in% classified_McManus[classified_McManus$category == "Cis only",]$gene,]
+D <- cpm_nolog[rownames(cpm_nolog) %in% classified_all[classified_all$category.x == "Cis only",]$V3,]
 D2 <- cbind(log2(abs((rowMeans(D[,c(4:6,10:11)]) - rowMeans(D[,1:3]) ) / (rowMeans(D[,c(4:6,10:11)]) - rowMeans(D[,7:9])))),"Cis only")
-D <- cpm_nolog[rownames(cpm_nolog) %in% classified_McManus[classified_McManus$category == "Trans only",]$gene,]
+D <- cpm_nolog[rownames(cpm_nolog) %in% classified_all[classified_all$category.x == "Trans only",]$V3,]
 D2 <- rbind(D2,cbind(log2(abs((rowMeans(D[,c(4:6,10:11)]) - rowMeans(D[,1:3]) ) / (rowMeans(D[,c(4:6,10:11)]) - rowMeans(D[,7:9])))),"Trans only"))
 D2 <- as.data.frame(D2)
 D2 <- D2 %>% mutate(V1 = as.numeric(V1))
@@ -1747,10 +1644,10 @@ ggplot(D2, aes(x = V2, y = V1)) +
   labs(x="Genes",y = expression(log[2]~frac(plain("Difference from ")*italic(CS),plain("Difference from ")*italic(Paragon)) ))
 dev.off()
 
-D <- cpm_nolog[rownames(cpm_nolog) %in% classified_McManus[classified_McManus$category == "Cis only",]$gene,]
+D <- cpm_nolog[rownames(cpm_nolog) %in% classified_all[classified_all$category.x == "Cis only",]$V3,]
 D <- D[,-c(1:11)]
 D2 <- cbind(log2(abs((rowMeans(D[,c(2:47)]) - D[,1]) / (rowMeans(D[,c(2:47)]) - D[,48]))),"Cis only")
-D <- cpm_nolog[rownames(cpm_nolog) %in% classified_McManus[classified_McManus$category == "Trans only",]$gene,]
+D <- cpm_nolog[rownames(cpm_nolog) %in% classified_all[classified_all$category.x == "Trans only",]$V3,]
 D2 <- rbind(D2,cbind(log2(abs((rowMeans(D[,c(2:47)]) - D[,1]) / (rowMeans(D[,c(2:47)]) - D[,48]))),"Trans only"))
 D2 <- as.data.frame(D2)
 D2 <- D2 %>% mutate(V1 = as.numeric(V1))
@@ -1764,32 +1661,3 @@ ggplot(D2, aes(x = V2, y = V1)) +
   geom_text(data = counts,aes(x = V2, y = 12, label = paste0("n=", n)),fontface = "bold") +
   labs(x="Genes",y = expression(log[2]~frac(plain("Difference from ")*italic(CS),plain("Difference from ")*italic(Paragon)) ))
 dev.off()
-
-D <- cpm_nolog[rownames(cpm_nolog) %in% classified_McManus[classified_McManus$category == "Cis only",]$gene,]
-D <- D[,-c(1:11)]
-m  <- as.matrix(D[, 2:47, drop = FALSE])
-num <- sweep(m, 1, D[, 1],  FUN = "-")
-den <- sweep(m, 1, D[, 48], FUN = "-")
-mat <- log2(abs(num / den))
-out <- stack(as.data.frame(mat)) 
-names(out) <- c("value", "column")
-out$group <- "Cis only"
-D2 <- out 
-
-D <- cpm_nolog[rownames(cpm_nolog) %in% classified_McManus[classified_McManus$category == "Trans only",]$gene,]
-D <- D[,-c(1:11)]
-m  <- as.matrix(D[, 2:47, drop = FALSE])
-num <- sweep(m, 1, D[, 1],  FUN = "-")
-den <- sweep(m, 1, D[, 48], FUN = "-")
-mat <- log2(abs(num / den))
-out <- stack(as.data.frame(mat))  
-names(out) <- c("value", "column")
-out$group <- "Trans only"
-D2 <- rbind(D2,out)
-
-ggplot(D2, aes(x = group, y = value)) +
-  geom_violin() +
-  scale_x_discrete(labels = c("Cis only"   = expression(italic(Cis)~"only"),"Trans only" = expression(italic(Trans)~"only"))) +
-  geom_text(data = counts,aes(x = V2, y = 12, label = paste0("n=", n)),fontface = "bold") +
-  labs(x="Genes",y = expression(log[2]~frac(plain("Difference from ")*italic(CS),plain("Difference from ")*italic(Paragon)) ))
-

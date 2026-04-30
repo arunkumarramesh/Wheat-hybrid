@@ -96,7 +96,6 @@ library(dplyr)
 library(ggplot2)
 library(forcats)
 library(cowplot)
-library(EnhancedVolcano)
 library(goseq)
 library(forcats)
 library(eulerr)
@@ -177,8 +176,6 @@ mat_DGEgenes <- cpm_nolog_relative[DGEgenes, ]
 pdf("CSvsP_heatmap.pdf",height=3.5,width=4)
 Heatmap(mat_DGEgenes, name = "Scaled CPM", show_row_names = FALSE, use_raster = F)
 dev.off()
-
-all.CSvP_volcano <- EnhancedVolcano(all.CSvP, lab = "", x = 'logFC', y = 'adj.P.Val', pCutoff = 0.05, FCcutoff = 1, title = 'CS v P', subtitle = "",  ylim = c(0,6), xlab = bquote(~Log[2]~ 'fold change'), ylab = bquote(-Log[10]~ 'FDR'))
 
 all_go_subset <- subset(all_go, Gene %in% rownames(all.CSvP))
 degenes <- rownames(all.CSvP)
@@ -274,12 +271,6 @@ pdf("venn.pdf",height=3,width = 4)
 plot(vennfit, quantities = TRUE, legend = TRUE, main = "",fills = c("#0072B2", "#E69F00"))
 dev.off()
 
-all.CS_PvCSxP_volcano <- EnhancedVolcano(all.CS_PvCSxP, lab = "", x = 'logFC', y = 'adj.P.Val', pCutoff = 0.05, FCcutoff = 1, title = 'Hybrids v Parents', subtitle = "", ylim = c(0,6), xlab = bquote(~Log[2]~ 'fold change'), ylab = bquote(-Log[10]~ 'FDR'))
-
-pdf("volcano_cs.pdf",height=10,width = 7)
-plot_grid(all.CSvP_volcano,all.CS_PvCSxP_volcano,ncol=1,labels="AUTO")
-dev.off()
-
 
 ### now using par reference
 
@@ -288,7 +279,6 @@ library(factoextra)
 library(pheatmap)
 library(ComplexHeatmap)
 library(magick)
-library(EnhancedVolcano)
 library(cowplot)
 library(eulerr)
 
@@ -390,8 +380,6 @@ length_CSvP_PAR <- nrow(top.table)
 sig_genes <- subset(top.table, top.table$adj.P.Val < 0.05)
 write.csv(all.CSvP, file = "CSvP all genes_PAR.csv")
 
-all.CSvP_volcano <- EnhancedVolcano(all.CSvP, lab = "", x = 'logFC', y = 'adj.P.Val', pCutoff = 0.05, FCcutoff = 1, title = 'CS v P', subtitle = "",  ylim = c(0,6), xlab = bquote(~Log[2]~ 'fold change'), ylab = bquote(-Log[10]~ 'FDR'))
-
 DGEgenes <- rownames(subset(top.table, top.table$adj.P.Val < 0.05))
 mat_DGEgenes <- cpm_nolog_relative[DGEgenes, ]
 
@@ -408,8 +396,6 @@ prop_sig_CS_PvCSxP_PAR <- length(which(top.table$adj.P.Val < 0.05))/nrow(top.tab
 length_CS_PvCSxP_PAR <- nrow(top.table)
 sig_genes <- subset(top.table, top.table$adj.P.Val < 0.05)
 write.csv(all.CS_PvCSxP, file = "CS_PvCSxP all genes_PAR.csv")
-
-all.CS_PvCSxP_volcano <- EnhancedVolcano(all.CS_PvCSxP, lab = "", x = 'logFC', y = 'adj.P.Val', pCutoff = 0.05, FCcutoff = 1, title = 'Hybrids v Parents', subtitle = "", ylim = c(0,6), xlab = bquote(~Log[2]~ 'fold change'), ylab = bquote(-Log[10]~ 'FDR'))
 
 DGEgenes <- rownames(subset(top.table, top.table$adj.P.Val < 0.05))
 mat_DGEgenes <- cpm_nolog_relative[DGEgenes, ]
@@ -435,10 +421,6 @@ vennfit <- euler(c(
 ))
 pdf("venn_par.pdf",height=3,width = 4)
 plot(vennfit, quantities = TRUE, legend = TRUE, main = "",fills = c("#0072B2", "#E69F00"))
-dev.off()
-
-pdf("volcano_par.pdf",height=10,width = 7)
-plot_grid(all.CSvP_volcano,all.CS_PvCSxP_volcano,ncol=1,labels="AUTO")
 dev.off()
 
 ## compare DE from two ref genomes
@@ -547,7 +529,7 @@ p <- c(
 df <- data.frame(group = names(p), prop = as.numeric(p))
 df$total <- c(nrow(CSvP_all_both),nrow(CSvP_all_both),nrow(CSvP_all_both),nrow(read.csv(file="CSvP all genes_PAR.csv")),nrow(read.csv(file="CSvP all genes.csv")))
 
-bias_plot_a <- ggplot(df, aes(x = group, y = prop)) +
+bias_plot_a_parents <- ggplot(df, aes(x = group, y = prop)) +
   geom_col(width = 0.7) +
   geom_text(aes(label = total), vjust = -0.3, size = 3.5) +
   scale_y_continuous(labels = percent_format(accuracy = 1), limits = c(0, max(df$prop) * 1.15)) +
@@ -567,7 +549,7 @@ bias_plot_d <- ggplot(CSvP_all_both %>% filter(P.Value_CS_ref > 0, P.Value_PAR_r
   labs(x = "-log10(CS reference p-value)", y = "-log10 (Paragon\nreference p-value)")
 
 pdf(file="CSvP_ref_bias.pdf",height = 6,width = 9)
-plot_grid(bias_plot_a,bias_plot_c,bias_plot_b,bias_plot_d,ncol=2)
+plot_grid(bias_plot_a_parents,bias_plot_c,bias_plot_b,bias_plot_d,ncol=2)
 dev.off()
 
 ## now doing it for hybrids vs parents
@@ -583,7 +565,7 @@ p <- c(
 df <- data.frame(group = names(p), prop = as.numeric(p))
 df$total <- c(nrow(CS_PvCSxP_all_both),nrow(CS_PvCSxP_all_both),nrow(CS_PvCSxP_all_both),nrow(read.csv(file="CS_PvCSxP all genes_PAR.csv")),nrow(read.csv(file="CS_PvCSxP all genes.csv")))
 
-bias_plot_a <- ggplot(df, aes(x = group, y = prop)) +
+bias_plot_a_parents_hybrids <- ggplot(df, aes(x = group, y = prop)) +
   geom_col(width = 0.7) +
   geom_text(aes(label = total), vjust = -0.3, size = 3.5) +
   scale_y_continuous(labels = percent_format(accuracy = 1), limits = c(0, max(df$prop) * 1.15)) +
@@ -603,5 +585,10 @@ bias_plot_d <- ggplot(CS_PvCSxP_all_both %>% filter(P.Value_CS_ref > 0, P.Value_
   labs(x = "-log10(CS reference p-value)", y = "-log10 (Paragon\nreference p-value)")
 
 pdf(file="CS_PvCSxP_ref_bias.pdf",height = 6,width = 9)
-plot_grid(bias_plot_a,bias_plot_b,bias_plot_d,ncol=2)
+plot_grid(bias_plot_a_parents_hybrids,bias_plot_b,bias_plot_d,ncol=2)
 dev.off()
+
+pdf(file="DE_ref_bias.pdf",height = 3,width = 6)
+plot_grid(bias_plot_a_parents,bias_plot_a_parents_hybridsncol=2)
+dev.off()
+
