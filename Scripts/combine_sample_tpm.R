@@ -98,6 +98,9 @@ head(gene_lengths)
 #save length per gene
 write.csv(gene_lengths, file="par_gene_lengths.csv")
 
+
+## Repeat for Harper et al data
+
 # Aim is to run combine samples to gene expression level from transcript level
 
 # Philippa Borrill
