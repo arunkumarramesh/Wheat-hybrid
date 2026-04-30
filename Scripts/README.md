@@ -554,3 +554,14 @@ for file in *.deduplicated.bam; do coverage2cytosine --gzip --genome_folder geno
 ./collapse_chg_symmetric.sh CS_combined.CX_report.CHG_symmetric.txt.gz CS_combined.CHG_symmetric_collapsed.txt.gz
 ./collapse_chg_symmetric.sh CSxP_combined.CX_report.CHG_symmetric.txt.gz CSxP_combined.CHG_symmetric_collapsed.txt.gz
 ```
+
+26. Merge counts from all three samples into a single file
+```
+./methylation_merge.sh CS_combined.CX_report.CHH.txt.gz CSxP_combined.CX_report.CHH.txt.gz P_combined.CX_report.CHH.txt.gz merged_CHH_sites.txt.gz
+./methylation_merge.sh CS_combined.CX_report.CHG_other.txt.gz CSxP_combined.CX_report.CHG_other.txt.gz P_combined.CX_report.CHG_other.txt.gz merged_CHG_other_sites.txt.gz
+./methylation_merge.sh CS_combined.CX_report.CG_other.txt.gz CSxP_combined.CX_report.CG_other.txt.gz P_combined.CX_report.CG_other.txt.gz merged_CG_other_sites.txt.gz
+
+./methylation_merge_sym.sh CS_combined.CG_symmetric_collapsed.txt.gz CSxP_combined.CG_symmetric_collapsed.txt.gz P_combined.CG_symmetric_collapsed.txt.gz merged_CG_symmetric.txt.gz
+./methylation_merge_sym.sh CS_combined.CHG_symmetric_collapsed.txt.gz CSxP_combined.CHG_symmetric_collapsed.txt.gz P_combined.CHG_symmetric_collapsed.txt.gz merged_CHG_symmetric.txt.gz
+
+```
