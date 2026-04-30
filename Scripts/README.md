@@ -524,3 +524,30 @@ for file in *_bismark_hisat2_pe.bam; do deduplicate_bismark -p --bam $file ; don
 for file in *.deduplicated.bam; do bismark_methylation_extractor --multicore 4 --gzip --bedGraph --buffer_size 280G --CX --genome_folder genome $file; done
 for file in *.deduplicated.bam; do coverage2cytosine --gzip --genome_folder genome --coverage_threshold 1 --CX -o ${file/.paired_bismark_hisat2_pe.deduplicated.bismark.cov.gz/} $file ; done
 ```
+
+22. Merge methylation counts from the three replicate libraries
+```
+./merge_cx_reports.sh P-1_1.CX_report.txt.gz P-2_1.CX_report.txt.gz P-3_1.CX_report.txt.gz P_combined.CX_report.txt.gz
+./merge_cx_reports.sh CS-1_1.CX_report.txt.gz CS-2_1.CX_report.txt.gz CS-3_1.CX_report.txt.gz CS_combined.CX_report.txt.gz
+./merge_cx_reports.sh CSxP-1_1.CX_report.txt.gz CSxP-2_1.CX_report.txt.gz CSxP-3_1.CX_report.txt.gz CSxP_combined.CX_report.txt.gz
+```
+
+23. From merged count files, split into files containing seperate cytosine contexts using split_cx_report.sh
+```
+./split_cx_report.sh P_combined.CX_report.txt.gz
+./split_cx_report.sh CS_combined.CX_report.txt.gz
+./split_cx_report.sh CSxP_combined.CX_report.txt.gz
+```
+24. For each CG site pair (consecutive sites), it sums the methylated and unmethylated counts across both strands
+```
+./collapse_cg_symmetric.sh P_combined.CX_report.CG_symmetric.txt.gz P_combined.CG_symmetric_collapsed.txt.gz
+./collapse_cg_symmetric.sh CS_combined.CX_report.CG_symmetric.txt.gz CS_combined.CG_symmetric_collapsed.txt.gz
+./collapse_cg_symmetric.sh CSxP_combined.CX_report.CG_symmetric.txt.gz CSxP_combined.CG_symmetric_collapsed.txt.gz
+```
+
+25. For each CHG site pair (two sites apart), it sums the methylated and unmethylated counts across both strands
+```
+./collapse_chg_symmetric.sh P_combined.CX_report.CHG_symmetric.txt.gz P_combined.CHG_symmetric_collapsed.txt.gz
+./collapse_chg_symmetric.sh CS_combined.CX_report.CHG_symmetric.txt.gz CS_combined.CHG_symmetric_collapsed.txt.gz
+./collapse_chg_symmetric.sh CSxP_combined.CX_report.CHG_symmetric.txt.gz CSxP_combined.CHG_symmetric_collapsed.txt.gz
+```
