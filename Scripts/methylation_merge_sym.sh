@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 f1="$1"
 f2="$2"
