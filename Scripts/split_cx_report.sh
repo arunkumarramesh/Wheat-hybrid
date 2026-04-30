@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 infile="$1"
 prefix="${2:-${infile%.txt.gz}}"
