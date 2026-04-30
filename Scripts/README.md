@@ -379,8 +379,7 @@ gunzip par_het_snps_filtered.vcf.gz
 /proj/popgen/a.ramesh/software/bcftools-1.16/bcftools merge -m all -Oz -o wheat_sites_merged_cs.vcf.gz wheat_ase_het_snps_filtered.vcf.gz PxCS3_on_wheat_sites.vcf.gz
 gunzip wheat_sites_merged_cs.vcf.gz
 ```
-
-12. Only keep sites that are not heterozygous in parents and are biallelic. Also do PCA for SNPs. Run snp_hetsites.R
+12. Only keep sites that are not heterozygous in parents and are biallelic. Also perform PCA on SNPs. Run [`snp_hetsites.R`](./snp_hetsites.R)
 
 13. Map reads using WASP for ASE
 ```
