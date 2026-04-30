@@ -360,12 +360,12 @@ with open("Triticum_aestivum_paragon.GCA949126075v1.62_exon.bed") as f,open("Tri
 ```
 10. Identify sites for ASE analyses
 ```
-/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -R iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o wheat_ase_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
+/software/bcftools-1.16/bcftools view  -R iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o wheat_ase_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
 /software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o wheat_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
 /software/htslib-1.16/tabix -p vcf wheat_het_snps_filtered.vcf.gz
 gunzip wheat_het_snps_filtered.vcf.gz
 
-/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o par_ase_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
+/software/bcftools-1.16/bcftools view  -R Triticum_aestivum_paragon.GCA949126075v1.62_scaf_exon_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o par_ase_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
 /software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o par_het_snps_filtered.vcf.gz par.ase.snps.vcf.gz
 /software/htslib-1.16/tabix -p vcf par_het_snps_filtered.vcf.gz
 gunzip par_het_snps_filtered.vcf.gz
@@ -374,8 +374,8 @@ gunzip par_het_snps_filtered.vcf.gz
 
 11. Include a merged file with PxCS3 to show no discrepency when genotype calls are included. only at gene expression level
 ```
-/proj/popgen/a.ramesh/software/gatk-4.3.0.0/gatk GenotypeGVCFs  -R iwgsc_refseqv2.1_part.fa  -V PxCS3_RNA_MKRN250026362-1A_22VTNMLT4_L3.g.vcf.gz  -L wheat_ase_het_snps_filtered.vcf.gz  --include-non-variant-sites true  -O PxCS3_on_wheat_sites.vcf.gz
-/proj/popgen/a.ramesh/software/bcftools-1.16/bcftools merge -m all -Oz -o wheat_sites_merged_cs.vcf.gz wheat_ase_het_snps_filtered.vcf.gz PxCS3_on_wheat_sites.vcf.gz
+/software/gatk-4.3.0.0/gatk GenotypeGVCFs  -R iwgsc_refseqv2.1_part.fa  -V PxCS3_RNA_MKRN250026362-1A_22VTNMLT4_L3.g.vcf.gz  -L wheat_ase_het_snps_filtered.vcf.gz  --include-non-variant-sites true  -O PxCS3_on_wheat_sites.vcf.gz
+/software/bcftools-1.16/bcftools merge -m all -Oz -o wheat_sites_merged_cs.vcf.gz wheat_ase_het_snps_filtered.vcf.gz PxCS3_on_wheat_sites.vcf.gz
 gunzip wheat_sites_merged_cs.vcf.gz
 ```
 12. Only keep sites that are not heterozygous in parents and are biallelic. Also perform PCA on SNPs. Run [`snp_hetsites.R`](./snp_hetsites.R)
@@ -445,8 +445,8 @@ for file in *.ase.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I $
 18. Process Harper et al. data
 ```
 
-/proj/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/prefetch --option-file harper_acc -O harper_data
-for file in *.sra; do /proj/popgen/a.ramesh/software/sratoolkit.3.0.0-centos_linux64/bin/fastq-dump --gzip --split-3  $file; done
+/software/sratoolkit.3.0.0-centos_linux64/bin/prefetch --option-file harper_acc -O harper_data
+for file in *.sra; do /software/sratoolkit.3.0.0-centos_linux64/bin/fastq-dump --gzip --split-3  $file; done
 
 mv SRR3031950.fastq.gz CS.fastq.gz
 mv SRR3031953.fastq.gz P.fastq.gz
@@ -498,9 +498,9 @@ mv SRR2983321.fastq.gz CSxP14.fastq.gz
 mv SRR2983322.fastq.gz CSxP15.fastq.gz
 mv SRR2983323.fastq.gz CSxP16.fastq.gz
 
-for file in *.fastq.gz; do java -jar /proj/popgen/a.ramesh/software/Trimmomatic-0.39/trimmomatic-0.39.jar SE -phred33 -threads 20 $file ${file/.fastq.gz/_trimmed.fq.gz} ILLUMINACLIP:TruSeq3-SE:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36; done
+for file in *.fastq.gz; do java -jar /software/Trimmomatic-0.39/trimmomatic-0.39.jar SE -phred33 -threads 20 $file ${file/.fastq.gz/_trimmed.fq.gz} ILLUMINACLIP:TruSeq3-SE:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36; done
 
-for file in *_trimmed.fq.gz; do /proj/popgen/a.ramesh/software/kallisto/build/src/kallisto quant -i iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_index  -o ${file/.fq.gz/_CS} --single -l 200 -s 20 -t 20  $file ; done
-for file in *_trimmed.fq.gz; do /proj/popgen/a.ramesh/software/kallisto/build/src/kallisto quant -i Triticum_aestivum_paragon.GCA949126075v1.cdna.all_index  -o ${file/.fq.gz/_PAR} --single -l 200 -s 20 -t 20  $file ; done
+for file in *_trimmed.fq.gz; do /software/kallisto/build/src/kallisto quant -i iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_index  -o ${file/.fq.gz/_CS} --single -l 200 -s 20 -t 20  $file ; done
+for file in *_trimmed.fq.gz; do /software/kallisto/build/src/kallisto quant -i Triticum_aestivum_paragon.GCA949126075v1.cdna.all_index  -o ${file/.fq.gz/_PAR} --single -l 200 -s 20 -t 20  $file ; done
 
 ```
