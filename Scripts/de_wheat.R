@@ -182,7 +182,6 @@ degenes <- rownames(all.CSvP)
 names(degenes) <- degenes
 degenes <- setNames(rep(0L, length(degenes)), names(degenes))
 degenes[names(degenes) %in% rownames(all.CSvP[(all.CSvP$adj.P.Val < 0.05) & (all.CSvP$logFC > 0.58),])] <- 1
-gene_length_subsest <- gene_length[gene_length$V5 %in% names(degenes),]
 len_lookup <- setNames(as.numeric(gene_length$V6), gene_length$V5)
 degenes_len <- len_lookup[names(degenes)]
 pwf = nullp(degenes, bias.data = degenes_len, plot.fit = TRUE)
@@ -197,7 +196,6 @@ degenes <- rownames(all.CSvP)
 names(degenes) <- degenes
 degenes <- setNames(rep(0L, length(degenes)), names(degenes))
 degenes[names(degenes) %in% rownames(all.CSvP[(all.CSvP$adj.P.Val < 0.05) & (all.CSvP$logFC < -0.58),])] <- 1
-gene_length_subsest <- gene_length[gene_length$V5 %in% names(degenes),]
 len_lookup <- setNames(as.numeric(gene_length$V6), gene_length$V5)
 degenes_len <- len_lookup[names(degenes)]
 pwf = nullp(degenes, bias.data = degenes_len, plot.fit = TRUE)
@@ -253,10 +251,10 @@ write.csv(all.CS_PvCSxP, file = "CS_PvCSxP all genes.csv")
 #Heatmap(mat_DGEgenes, name = "Scaled CPM", show_row_names = FALSE, use_raster = F)
 #dev.off()
 
-nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP > 0.58 & all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC > 0.58,])
-nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP < -0.58 & all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC < -0.58,])
-nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP > 0.58,])
-nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP < -0.58,])
+nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP$logFC > 0.58 & all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC > 0.58,])
+nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP$logFC < -0.58 & all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC < -0.58,])
+nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP$logFC > 0.58,])
+nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP$logFC < -0.58,])
 nrow(all.CS_PvCSxP[all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC > 0.58,])
 nrow(all.CS_PvCSxP[all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC < -0.58,])
 nrow(all.CSvP)
@@ -301,7 +299,6 @@ CSxPvPxCS <- eBayes(contrasts.fit(fit, contrast = c(0, 1, 0, -1)))
 top.table <- topTable(CSxPvPxCS, sort.by = "P", n = Inf)
 all.CSxPvPxCS <- topTable(CSxPvPxCS, sort.by = "none", n = Inf,p.value=1,lfc=0)
 length(which(top.table$adj.P.Val < 0.05)) 
-length(rownames(top.table) %in% SingleCopyOrthologues$V2)
 sig_genes <- subset(top.table, top.table$adj.P.Val < 0.05) 
 write.csv(sig_genes, file = "CSxPvPxCS sig genes PAR.csv")
 
@@ -406,10 +403,11 @@ mat_DGEgenes <- cpm_nolog_relative[DGEgenes, ]
 
 ## for venn diagram
 
-nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP > 0.58 & all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC > 0.58,])
-nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP < -0.58 & all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC < -0.58,])
-nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP > 0.58,])
-nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP < -0.58,])
+nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP$logFC > 0.58 & all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC > 0.58,])
+nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP$logFC < -0.58 & all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC < -0.58,])
+nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP$logFC > 0.58,])
+nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & all.CSvP$logFC < -0.58,])
+
 nrow(all.CS_PvCSxP[all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC > 0.58,])
 nrow(all.CS_PvCSxP[all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC < -0.58,])
 nrow(all.CSvP)
@@ -588,7 +586,7 @@ pdf(file="CS_PvCSxP_ref_bias.pdf",height = 6,width = 9)
 plot_grid(bias_plot_a_parents_hybrids,bias_plot_b,bias_plot_d,ncol=2)
 dev.off()
 
-pdf(file="DE_ref_bias.pdf",height = 3,width = 6)
-plot_grid(bias_plot_a_parents,bias_plot_a_parents_hybridsncol=2)
+pdf(file="DE_ref_bias.pdf",height = 2.5,width = 9.5)
+plot_grid(bias_plot_a_parents,bias_plot_a_parents_hybrids,ncol=2)
 dev.off()
 

@@ -530,6 +530,11 @@ hits2 <- homologies_kept %>%
   mutate(hit_A = A %in% ids_sig2,hit_B = B %in% ids_sig2,hit_D = D %in% ids_sig2) %>%
   mutate(from = paste0(ifelse(hit_A, "A", ""),ifelse(hit_B, "B", ""),ifelse(hit_D, "D", "")),from = ifelse(from == "", "none", from),n_hits = (hit_A + hit_B + hit_D))
 
+hits$direction <- "Up"
+hits2$direction <- "Down"
+hits_both <- rbind(hits,hits2)
+write.csv(hits_both,file="triads_CS_P.csv",row.names = F)
+
 combo_levels <- c("A","B","D","AB","AD","BD","ABD","none")
 combo_counts <- hits %>%
   dplyr::count(from, name = "n_rows") %>%
@@ -833,7 +838,7 @@ sample_full_rows <- function(n_rows, p = NULL, n_cols = 3, trials = 1, seed = NU
 }
 
 # 10000 trials to estimate the distribution
-res2 <- sample_full_rows(n_rows = 7892, p = 0.456, n_cols = 3, trials = 10000, seed = 123)
+res2 <- sample_full_rows(n_rows = 7892, p = 0.42, n_cols = 3, trials = 10000, seed = 123)
 mean(res2$full_rows_count)
 
 pdf(file="Number_triads_expected.pdf",height=2.5,width=4)
@@ -1069,7 +1074,7 @@ plot_grid(hebbias_avecpm_plot_a,hebbias_avecpm_plot_b,hebbias_avecpm_plot_c,hebb
 dev.off()
 
 pdf(file="ABD_CS_PvCSxP.pdf",height=5,width=13)
-plot_grid(hebbias_cv_plot_d,hebbias_cv_plot_g,hebbias_avecpm_plot_d,hebbias_avecpm_plot_g,ncol=2)
+plot_grid(hebbias_avecpm_plot_d,hebbias_cv_plot_d,hebbias_avecpm_plot_g,hebbias_cv_plot_g,ncol=2, labels="AUTO")
 dev.off()
 
 ## cannot do similar anayses with ASE genes as too few are in triads
@@ -1149,34 +1154,43 @@ label_cis_trans_md <- function(x) {
   str_replace_all(x,regex("\\b(cis|trans)\\b", ignore_case = TRUE),~ paste0("<i>", .x, "</i>"))
 }
 
-summary(aov(CV ~ cat_canonical, data = bias_categories_ase_sub))
+
+cat_counts <- bias_categories_ase_sub %>%
+  dplyr::count(cat_canonical, name = "n")
+
+cv_labels <- HSD.test(aov(CV ~ cat_canonical, data = bias_categories_ase_sub),"cat_canonical",group = TRUE)$groups %>%
+  rownames_to_column("cat_canonical") %>%
+  left_join(cat_counts, by = "cat_canonical") %>%
+  mutate(label = paste0(groups, "\n", "n=", n))
+
 homologies_McManus_plot_a <- ggplot(data = bias_categories_ase_sub,aes(x = cat_canonical, y = CV)) +
   geom_boxplot() +
   xlab("") +
-  geom_text(data = HSD.test(aov(CV ~ cat_canonical, data = bias_categories_ase_sub),"cat_canonical", group = TRUE)$groups %>% rownames_to_column("cat_canonical"),
-    aes(cat_canonical, y = 1.3, label = groups),vjust = 0, angle = 0) +
+  ylab("CV") +
+  geom_text(data = cv_labels,aes(cat_canonical, y = 1.3, label = label),vjust = 0.5) +
   coord_flip() +
   scale_x_discrete(labels = label_cis_trans_md) +
-  labs(title=paste("n=",nrow(bias_categories_ase_sub)," triads",sep="")) +
   theme(axis.text.y = element_markdown(),strip.placement = "outside",strip.background = element_blank())
 
-summary(aov(triad_tpm ~ cat_canonical, data = bias_categories_ase_sub))
+tpm_labels <- HSD.test(aov(triad_tpm ~ cat_canonical, data = bias_categories_ase_sub),"cat_canonical",group = TRUE)$groups %>%
+  rownames_to_column("cat_canonical") %>%
+  left_join(cat_counts, by = "cat_canonical") %>%
+  mutate(label = paste0(groups, "\n", "n=", n))
+
 homologies_McManus_plot_b <- ggplot(data = bias_categories_ase_sub,aes(x = cat_canonical, y = triad_tpm)) +
   geom_boxplot() +
   xlab("") +
   ylab("Triad TPM") +
-  ylim(0,180) +
-  geom_text(data = HSD.test(aov(triad_tpm ~ cat_canonical, data = bias_categories_ase_sub),"cat_canonical", group = TRUE)$groups %>% rownames_to_column("cat_canonical"),
-            aes(cat_canonical, y = 120, label = groups),vjust = 0, angle = 0) +
+  ylim(0, 180) +
+  geom_text(data = tpm_labels,aes(cat_canonical, y = 120, label = label), vjust = 0.5) +
   coord_flip() +
   scale_x_discrete(labels = label_cis_trans_md) +
-  labs(title=paste("n=",nrow(bias_categories_ase_sub)," triads",sep="")) +
   theme(axis.text.y = element_markdown(),strip.placement = "outside",strip.background = element_blank())
 
-pdf(file="triad_ase_cv.pdf",height=2,width=4.5)
+pdf(file="triad_ase_cv.pdf",height=2,width=5)
 homologies_McManus_plot_a
 dev.off()
 
-pdf(file="triad_ase_tpm.pdf",height=2,width=4.5)
+pdf(file="triad_ase_tpm.pdf",height=2,width=5)
 homologies_McManus_plot_b
 dev.off()
