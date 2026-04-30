@@ -504,3 +504,23 @@ for file in *_trimmed.fq.gz; do /software/kallisto/build/src/kallisto quant -i i
 for file in *_trimmed.fq.gz; do /software/kallisto/build/src/kallisto quant -i Triticum_aestivum_paragon.GCA949126075v1.cdna.all_index  -o ${file/.fq.gz/_PAR} --single -l 200 -s 20 -t 20  $file ; done
 
 ```
+
+19. Trim bisulfite reads
+```
+for file in P-1_R1.fq.gz; do java -jar $EBROOTTRIMMOMATIC/trimmomatic-0.39.jar PE -phred33 -threads 20 $file ${file/_R1.fq.gz/_R2.fq.gz} ${file/_R1.fq.gz/_1.paired.fq.gz} ${file/_R1.fq.gz/_1.unpaired.fq.gz} ${file/_R1.fq.gz/_2.paired.fq.gz} ${file/_R1.fq.gz/_2.unpaired.fq.gz} ILLUMINACLIP:TruSeq3-PE_sailgene.fa:2:30:10:2:True LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36; done
+```
+
+20. Index genome, map bisulfite reads and dedpulicate
+```
+# genome folder has 161010_Chinese_Spring_v1.0_pseudomolecules_parts.fast
+bismark_genome_preparation --hisat2 --verbose --parallel 5 genome
+
+for file in *.paired.fq.gz ; do bismark --multicore 4 --hisat2 --genome_folder genome -1 $file -2 ${file/_1.paired.fq.gz/_2.paired.fq.gz}  ; done
+for file in *_bismark_hisat2_pe.bam; do deduplicate_bismark -p --bam $file ; done
+```
+
+21. Extract methylation counts
+```
+for file in *.deduplicated.bam; do bismark_methylation_extractor --multicore 4 --gzip --bedGraph --buffer_size 280G --CX --genome_folder genome $file; done
+for file in *.deduplicated.bam; do coverage2cytosine --gzip --genome_folder genome --coverage_threshold 1 --CX -o ${file/.paired_bismark_hisat2_pe.deduplicated.bismark.cov.gz/} $file ; done
+```
