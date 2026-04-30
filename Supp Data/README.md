@@ -11,8 +11,10 @@
 | `kaks_output_separatevalues.txt` | Ka and Ks values from Ramírez-González et al., *Science*, DOI: 10.1126/science.aar6089. |
 | `gene.gff3` | Genomic locations of IWGSC RefSeq v2.1 genes. |
 | `bias_category_all_samples_inc_orig_expr.csv` | Triad identification and homoeolog expression-bias categories. |
-| `iwgsc_refseq_all_correspondances.csv` | v1.1 to v2.1 IWGSC RefSeq gene IDs from urgi.versailles.inrae.fr  |
-| `part_sizes.txt` | Chromosome part sizes for Chinese Spring IWGSC RefSeq v2.1 |
+| `iwgsc_refseq_all_correspondances.csv` | v1.1 to v2.1 IWGSC RefSeq gene IDs from urgi.versailles.inrae.fr |
+| `transcript_to_gene_refseqv2.1.csv` | Mapping of transcript IDs to gene IDs for IWGSC RefSeq v2.1. |
+| `transcript_to_gene_paragon.GCA949126075v1.csv` | Mapping of transcript IDs to gene IDs for Paragon GCA949126075v1. |
+| `part_sizes.txt` | Chromosome part sizes for Chinese Spring IWGSC RefSeq v2.1. |
 | `Paragon_part_chr_sizes.txt` | Chromosome part sizes for Paragon GCA949126075v1. |
 
 ### Expression quantification files
@@ -23,6 +25,17 @@
 | `par_count.tsv` | Gene read counts estimated using the Paragon GCA949126075v1 reference. |
 | `cs_tpm.tsv` | Transcript-per-million estimates generated using the Chinese Spring IWGSC RefSeq v2.1 reference. |
 | `par_tpm.tsv` | Transcript-per-million estimates generated using the Paragon GCA949126075v1 reference. |
+| `cs_gene_lengths.csv` | Gene lengths for the Chinese Spring IWGSC RefSeq v2.1 reference. |
+| `par_gene_lengths.csv` | Gene lengths for the Paragon GCA949126075v1 reference. |
+
+### Variant and SNP datasets
+
+| File | Description |
+|---|---|
+| `wheat_ase_het_snps_filtered.vcf.gz` | Heterozygous SNPs suitable for ASE analysis based on the IWGSC RefSeq v2.1 reference. |
+| `wheat_het_snps_filtered.vcf.zip` | Heterozygous SNPs based on the IWGSC RefSeq v2.1 reference (not restricted to ASE sites). |
+| `par_ase_het_snps_filtered.vcf.gz` | Heterozygous SNPs suitable for ASE analysis based on the Paragon GCA949126075v1 reference. |
+| `par_het_snps_filtered.vcf.zip` | Heterozygous SNPs based on the Paragon GCA949126075v1 reference (not restricted to ASE sites). |
 
 ### Allele-specific expression data
 
