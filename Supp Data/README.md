@@ -51,11 +51,13 @@
 ### Differential expression results
 
 | File | Description |
-|---|---|
-| `CSvP all genes.csv` | Differential expression results comparing Chinese Spring and Paragon, using IWGSC RefSeq v2.1. |
-| `CSvP all genes_PAR.csv` | Differential expression results comparing Chinese Spring and Paragon, using GCA949126075v1. |
-| `CS_PvCSxP all genes.csv` | Differential expression results comparing parents and hybrids, using IWGSC RefSeq v2.1. |
-| `CS_PvCSxP all genes_PAR.csv` | Differential expression results comparing parents and hybrids, using GCA949126075v1. |
+|------|-------------|
+| `CSvP all genes.csv` | Differential expression results for Chinese Spring vs Paragon using IWGSC RefSeq v2.1. |
+| `CSvP all genes_PAR.csv` | Differential expression results for Chinese Spring vs Paragon using GCA949126075v1. |
+| `CS_PvCSxP all genes.csv` | Differential expression results for parents vs hybrids using IWGSC RefSeq v2.1. |
+| `CS_PvCSxP all genes_PAR.csv` | Differential expression results for parents vs hybrids using GCA949126075v1. |
+| `triads_CS_P.csv` | Triads with one or more homoeologs differentially expressed between Chinese Spring (CS) and Paragon (IWGSC RefSeq v2.1). “Up” indicates higher expression in hybrids; “Down” indicates higher expression in parents. |
+| `triads_hybrids_parents.csv` | Triads with one or more homoeologs differentially expressed between mid-parental estimates and hybrids (IWGSC RefSeq v2.1). “Up” indicates higher expression in CS; “Down” indicates higher expression in Paragon. |
 
 ### Regulatory classification files
 
