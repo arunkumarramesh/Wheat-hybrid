@@ -443,7 +443,7 @@ for file in *.ase.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I $
 
 16. Compare homoeolog expression bias for differentially expressed genes using assign_homoeolog_expression_bias_categories.R
 
-17. Compare allele specific expression using ase_test.R
+17. Compare allele specific expression using ase_test.R Also run mbased_cs.R, mbased_cs_0.5.R, and mbased_par.R separately, which take longer.
 
 18. Process Harper et al. data
 ```
