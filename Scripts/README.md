@@ -515,7 +515,7 @@ for file in P-1_R1.fq.gz; do java -jar $EBROOTTRIMMOMATIC/trimmomatic-0.39.jar P
 
 20. Index genome, map bisulfite reads and dedpulicate
 ```
-# genome folder has 161010_Chinese_Spring_v1.0_pseudomolecules_parts.fast
+# genome folder has 161010_Chinese_Spring_v1.0_pseudomolecules_parts.fasta
 bismark_genome_preparation --hisat2 --verbose --parallel 5 genome
 
 for file in *.paired.fq.gz ; do bismark --multicore 4 --hisat2 --genome_folder genome -1 $file -2 ${file/_1.paired.fq.gz/_2.paired.fq.gz}  ; done
