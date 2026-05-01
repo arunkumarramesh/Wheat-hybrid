@@ -583,7 +583,7 @@ awk '($4=="C"&&$5=="T")||($4=="T"&&$5=="C"){chr=$1;sub(/^triticum_aestivum\./,"c
 
 ```
 
-28. Remove methylation sites with C/T differences between CS and Paragon reference genomes
+29. Remove methylation sites with C/T differences between CS and Paragon reference genomes
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CG_symmetric_all.txt.gz
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CHG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CHG_symmetric_all.txt.gz
@@ -591,7 +591,81 @@ awk 'BEGIN{OFS="\t"} {print $1, $2+1}' ct_snps.bed > ct_snps.pos.txt
 awk 'BEGIN{FS=OFS="\t"} NR==FNR{a[$1 FS $2]; next} FNR==1 || !(($1 FS $2) in a)' ct_snps.pos.txt <(zcat merged_CHH_fullchr.txt.gz) | gzip > merged_CHH_all.txt.gz
 ```
 
-28. Subset CDS regions from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
+30. Convert IWGSC v1.1 gene annotation into BED files for CDS and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs.
+
+```
+gff="IWGSC_v1.1_HC_20170706.gff3"
+map="iwgsc_refseq_all_correspondances.csv"
+out_cds="IWGSC_v1.1_to_v2.1_CDS.bed"
+out_prom="IWGSC_v1.1_to_v2.1_promoter1kb.bed"
+
+awk -v OFS="\t" '
+BEGIN { FS = "[[:space:]]+" }
+
+function get_attr(attrs, key,   n, i, a, kv) {
+    n = split(attrs, a, ";")
+    for (i = 1; i <= n; i++) {
+        split(a[i], kv, "=")
+        if (kv[1] == key) return kv[2]
+    }
+    return ""
+}
+
+FNR == NR {
+    if ($1 == "v1.0" && $2 == "v1.1" && $3 == "v2.1") next
+    if ($2 ~ /LC$/ || $3 ~ /LC$/ || $2 == "-" || $3 == "-") next
+    map_v11_to_v21[$2] = $3
+    next
+}
+
+/^##sequence-region/ {
+    chr_min[$2] = $3
+    chr_max[$2] = $4
+    next
+}
+
+/^#/ { next }
+
+$3 == "gene" {
+    gene_id_v21 = map_v11_to_v21[get_attr($9, "ID")]
+    if (gene_id_v21 == "") next
+
+    if ($7 == "+") {
+        prom_start_1 = $4 - 1000
+        prom_end_1 = $4 - 1
+    } else if ($7 == "-") {
+        prom_start_1 = $5 + 1
+        prom_end_1 = $5 + 1000
+    } else {
+        next
+    }
+
+    if ($1 in chr_min) {
+        if (prom_start_1 < chr_min[$1]) prom_start_1 = chr_min[$1]
+        if (prom_end_1 > chr_max[$1]) prom_end_1 = chr_max[$1]
+    }
+
+    if (prom_start_1 <= prom_end_1)
+        print $1, prom_start_1 - 1, prom_end_1, gene_id_v21, ".", $7 > "'"$out_prom"'"
+
+    next
+}
+
+$3 == "mRNA" || $3 == "transcript" {
+    tx_id = get_attr($9, "ID")
+    parent_gene_v11 = get_attr($9, "Parent")
+    if (tx_id != "" && parent_gene_v11 != "") tx_to_gene_v11[tx_id] = parent_gene_v11
+    next
+}
+
+$3 == "CDS" {
+    gene_id_v21 = map_v11_to_v21[tx_to_gene_v11[get_attr($9, "Parent")]]
+    if (gene_id_v21 != "") print $1, $4 - 1, $5, gene_id_v21, ".", $7 > "'"$out_cds"'"
+}
+' "$map" "$gff"
+```
+
+31. Subset CDS regions from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b IWGSC_v1.1_to_v2.1_CDS.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_CDS.txt.gz
 zcat merged_CG_symmetric_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp && mv tmp merged_CG_symmetric_CDS.txt.gz
@@ -604,7 +678,7 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 
 ```
 
-29. Subset promoter regions (1Kb upstream) from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
+32. Subset promoter regions (1Kb upstream) from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b IWGSC_v1.1_to_v2.1_promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_promoter1kb.txt.gz
 
