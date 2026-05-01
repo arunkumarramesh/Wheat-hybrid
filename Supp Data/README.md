@@ -5,6 +5,7 @@
 | File | Description |
 |---|---|
 | `adaptors_novogene.fa` | Adapter sequences used for RNA-seq read trimming. |
+| `TruSeq3-PE_sailgene.fa` | Adapter sequences used for methyl-seq read trimming. |
 | `SingleCopyOrthologues_matrix.tsv` | One-to-one orthologues identified between Chinese Spring IWGSC RefSeq v2.1 and Paragon GCA949126075v1. |
 | `BP.csv`, `MF.csv`, `CC.csv` | Gene Ontology annotation files for IWGSC RefSeq v2.1 genes. |
 | `homoeologs_1_1_1_synt_and_non_synt.csv` | Triad classification from Ramírez-González et al., *Science*, DOI: 10.1126/science.aar6089. |
