@@ -535,27 +535,27 @@ for file in *.deduplicated.bam; do coverage2cytosine --gzip --genome_folder geno
 ./merge_cx_reports.sh CSxP-1_1.CX_report.txt.gz CSxP-2_1.CX_report.txt.gz CSxP-3_1.CX_report.txt.gz CSxP_combined.CX_report.txt.gz
 ```
 
-23. From merged count files, split into files containing seperate cytosine contexts using split_cx_report.sh
+23. From merged methylation count files, split into files containing seperate cytosine contexts using split_cx_report.sh
 ```
 ./split_cx_report.sh P_combined.CX_report.txt.gz
 ./split_cx_report.sh CS_combined.CX_report.txt.gz
 ./split_cx_report.sh CSxP_combined.CX_report.txt.gz
 ```
-24. For each CG site pair (consecutive sites), it sums the methylated and unmethylated counts across both strands
+24. For each CG methylation site pair (consecutive sites), it sums the methylated and unmethylated counts across both strands
 ```
 ./collapse_cg_symmetric.sh P_combined.CX_report.CG_symmetric.txt.gz P_combined.CG_symmetric_collapsed.txt.gz
 ./collapse_cg_symmetric.sh CS_combined.CX_report.CG_symmetric.txt.gz CS_combined.CG_symmetric_collapsed.txt.gz
 ./collapse_cg_symmetric.sh CSxP_combined.CX_report.CG_symmetric.txt.gz CSxP_combined.CG_symmetric_collapsed.txt.gz
 ```
 
-25. For each CHG site pair (two sites apart), it sums the methylated and unmethylated counts across both strands
+25. For each CHG methylation site pair (two sites apart), it sums the methylated and unmethylated counts across both strands
 ```
 ./collapse_chg_symmetric.sh P_combined.CX_report.CHG_symmetric.txt.gz P_combined.CHG_symmetric_collapsed.txt.gz
 ./collapse_chg_symmetric.sh CS_combined.CX_report.CHG_symmetric.txt.gz CS_combined.CHG_symmetric_collapsed.txt.gz
 ./collapse_chg_symmetric.sh CSxP_combined.CX_report.CHG_symmetric.txt.gz CSxP_combined.CHG_symmetric_collapsed.txt.gz
 ```
 
-26. Merge counts from all three samples into a single file
+26. Merge methylation counts from all three samples into a single file
 ```
 ./methylation_merge.sh CS_combined.CX_report.CHH.txt.gz CSxP_combined.CX_report.CHH.txt.gz P_combined.CX_report.CHH.txt.gz merged_CHH_sites.txt.gz
 ./methylation_merge.sh CS_combined.CX_report.CHG_other.txt.gz CSxP_combined.CX_report.CHG_other.txt.gz P_combined.CX_report.CHG_other.txt.gz merged_CHG_other_sites.txt.gz
@@ -565,3 +565,42 @@ for file in *.deduplicated.bam; do coverage2cytosine --gzip --genome_folder geno
 ./methylation_merge_sym.sh CS_combined.CHG_symmetric_collapsed.txt.gz CSxP_combined.CHG_symmetric_collapsed.txt.gz P_combined.CHG_symmetric_collapsed.txt.gz merged_CHG_symmetric.txt.gz
 
 ```
+
+27. Convert chromosome part coordinates into full genome coordinates for methylation sites
+```
+awk 'BEGIN{FS=OFS="\t"} NR==FNR{c[$1]=$4; o[$1]=$5; next} FNR==1{print; next} {$2=$2+o[$1]; $1=c[$1]; print}' 161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed <(zcat merged_CG_symmetric.txt.gz) | gzip > merged_CG_symmetric_fullchr.txt.gz
+awk 'BEGIN{FS=OFS="\t"} NR==FNR{c[$1]=$4; o[$1]=$5; next} FNR==1{print; next} {$2=$2+o[$1]; $1=c[$1]; print}' 161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed <(zcat merged_CHG_symmetric.txt.gz) | gzip > merged_CHG_symmetric_fullchr.txt.gz
+awk 'BEGIN{FS=OFS="\t"} NR==FNR{c[$1]=$4; o[$1]=$5; next} FNR==1{print; next} {$2=$2+o[$1]; $1=c[$1]; print}' 161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed <(zcat merged_CHH_sites.txt.gz) | gzip > merged_CHH_fullchr.txt.gz
+
+```
+
+28. Remove methylation sites with C/T differences between CS and Paragon reference genomes
+```
+(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CG_symmetric_all.txt.gz
+(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CHG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CHG_symmetric_all.txt.gz
+awk 'BEGIN{OFS="\t"} {print $1, $2+1}' ct_snps.bed > ct_snps.pos.txt
+awk 'BEGIN{FS=OFS="\t"} NR==FNR{a[$1 FS $2]; next} FNR==1 || !(($1 FS $2) in a)' ct_snps.pos.txt <(zcat merged_CHH_fullchr.txt.gz) | gzip > merged_CHH_all.txt.gz
+```
+
+28. Subset CDS regions from methylation sites. Remove any duplicate positions
+```
+(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b IWGSC_v1.1_to_v2.1_promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_promoter1kb.txt.gz
+zcat merged_CG_symmetric_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp && mv tmp merged_CG_symmetric_CDS.txt.gz
+
+(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CHG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b IWGSC_v1.1_to_v2.1_promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CHG_symmetric_promoter1kb.txt.gz
+zcat merged_CHG_symmetric_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp && mv tmp merged_CHG_symmetric_CDS.txt.gz
+
+python3 subset_chh_by_cds.py IWGSC_v1.1_to_v2.1_CDS.bed merged_CHH_all.txt.gz merged_CHH_all_CDS.txt.gz
+zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp && mv tmp merged_CHH_all_CDS.txt.gz
+
+```
+
+29. Subset promoter regions (1Kb upstream) from methylation sites. Remove any duplicate positions
+```
+(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b IWGSC_v1.1_to_v2.1_CDS.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_CDS.txt.gz
+
+(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CHG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b IWGSC_v1.1_to_v2.1_CDS.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CHG_symmetric_CDS.txt.gz
+
+python3 subset_chh_by_cds.py IWGSC_v1.1_to_v2.1_promoter1kb.bed merged_CHH_all.txt.gz merged_CHH_promoter1kb.txt.gz
+```
+
