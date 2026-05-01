@@ -4,70 +4,70 @@
 
 | File | Description |
 |---|---|
-| `adaptors_novogene.fa` | Adapter sequences used for RNA-seq read trimming. |
-| `TruSeq3-PE_sailgene.fa` | Adapter sequences used for methyl-seq read trimming. |
-| `SingleCopyOrthologues_matrix.tsv` | One-to-one orthologues identified between Chinese Spring IWGSC RefSeq v2.1 and Paragon GCA949126075v1. |
-| `BP.csv`, `MF.csv`, `CC.csv` | Gene Ontology annotation files for IWGSC RefSeq v2.1 genes. |
-| `homoeologs_1_1_1_synt_and_non_synt.csv` | Triad classification from Ramírez-González et al., *Science*, DOI: 10.1126/science.aar6089. |
-| `kaks_output_separatevalues.txt` | Ka and Ks values from Ramírez-González et al., *Science*, DOI: 10.1126/science.aar6089. |
-| `gene.gff3` | Genomic locations of IWGSC RefSeq v2.1 genes. |
-| `bias_category_all_samples_inc_orig_expr.csv` | Triad identification and homoeolog expression-bias categories. |
-| `iwgsc_refseq_all_correspondances.csv` | v1.1 to v2.1 IWGSC RefSeq gene IDs from urgi.versailles.inrae.fr |
-| `transcript_to_gene_refseqv2.1.csv` | Mapping of transcript IDs to gene IDs for IWGSC RefSeq v2.1. |
-| `transcript_to_gene_paragon.GCA949126075v1.csv` | Mapping of transcript IDs to gene IDs for Paragon GCA949126075v1. |
-| `part_sizes.txt` | Chromosome part sizes for Chinese Spring IWGSC RefSeq v2.1. |
-| `Paragon_part_chr_sizes.txt` | Chromosome part sizes for Paragon GCA949126075v1. |
+| [`adaptors_novogene.fa`](adaptors_novogene.fa) | Adapter sequences used for RNA-seq read trimming. |
+| [`TruSeq3-PE_sailgene.fa`](TruSeq3-PE_sailgene.fa) | Adapter sequences used for methyl-seq read trimming. |
+| [`SingleCopyOrthologues_matrix.tsv`](SingleCopyOrthologues_matrix.tsv) | One-to-one orthologues identified between Chinese Spring IWGSC RefSeq v2.1 and Paragon GCA949126075v1. |
+| [`BP.csv`](BP.csv), [`MF.csv`](MF.csv), [`CC.csv`](CC.csv) | Gene Ontology annotation files for IWGSC RefSeq v2.1 genes. |
+| [`homoeologs_1_1_1_synt_and_non_synt.csv`](homoeologs_1_1_1_synt_and_non_synt.csv) | Triad classification from Ramírez-González et al., *Science*, DOI: 10.1126/science.aar6089. |
+| [`kaks_output_separatevalues.txt`](kaks_output_separatevalues.txt) | Ka and Ks values from Ramírez-González et al., *Science*, DOI: 10.1126/science.aar6089. |
+| [`gene.gff3`](gene.gff3) | Genomic locations of IWGSC RefSeq v2.1 genes. |
+| [`bias_category_all_samples_inc_orig_expr.csv`](bias_category_all_samples_inc_orig_expr.csv) | Triad identification and homoeolog expression-bias categories. |
+| [`iwgsc_refseq_all_correspondances.csv`](iwgsc_refseq_all_correspondances.csv) | v1.1 to v2.1 IWGSC RefSeq gene IDs from urgi.versailles.inrae.fr. |
+| [`transcript_to_gene_refseqv2.1.csv`](transcript_to_gene_refseqv2.1.csv) | Mapping of transcript IDs to gene IDs for IWGSC RefSeq v2.1. |
+| [`transcript_to_gene_paragon.GCA949126075v1.csv`](transcript_to_gene_paragon.GCA949126075v1.csv) | Mapping of transcript IDs to gene IDs for Paragon GCA949126075v1. |
+| [`part_sizes.txt`](part_sizes.txt) | Chromosome part sizes for Chinese Spring IWGSC RefSeq v2.1. |
+| [`Paragon_part_chr_sizes.txt`](Paragon_part_chr_sizes.txt) | Chromosome part sizes for Paragon GCA949126075v1. |
 
 ### Expression quantification files
 
 | File | Description |
 |---|---|
-| `cs_count.tsv` | Gene read counts estimated using the Chinese Spring IWGSC RefSeq v2.1 reference. |
-| `par_count.tsv` | Gene read counts estimated using the Paragon GCA949126075v1 reference. |
-| `cs_tpm.tsv` | Transcript-per-million estimates generated using the Chinese Spring IWGSC RefSeq v2.1 reference. |
-| `par_tpm.tsv` | Transcript-per-million estimates generated using the Paragon GCA949126075v1 reference. |
-| `cs_gene_lengths.csv` | Gene lengths for the Chinese Spring IWGSC RefSeq v2.1 reference. |
-| `par_gene_lengths.csv` | Gene lengths for the Paragon GCA949126075v1 reference. |
+| [`cs_count.tsv`](cs_count.tsv) | Gene read counts estimated using the Chinese Spring IWGSC RefSeq v2.1 reference. |
+| [`par_count.tsv`](par_count.tsv) | Gene read counts estimated using the Paragon GCA949126075v1 reference. |
+| [`cs_tpm.tsv`](cs_tpm.tsv) | Transcript-per-million estimates generated using the Chinese Spring IWGSC RefSeq v2.1 reference. |
+| [`par_tpm.tsv`](par_tpm.tsv) | Transcript-per-million estimates generated using the Paragon GCA949126075v1 reference. |
+| [`cs_gene_lengths.csv`](cs_gene_lengths.csv) | Gene lengths for the Chinese Spring IWGSC RefSeq v2.1 reference. |
+| [`par_gene_lengths.csv`](par_gene_lengths.csv) | Gene lengths for the Paragon GCA949126075v1 reference. |
 
 ### Variant and SNP datasets
 
 | File | Description |
 |---|---|
-| `wheat_ase_het_snps_filtered.vcf.gz` | Heterozygous SNPs suitable for ASE analysis based on the IWGSC RefSeq v2.1 reference. |
-| `wheat_het_snps_filtered.vcf.zip` | Heterozygous SNPs based on the IWGSC RefSeq v2.1 reference (not restricted to ASE sites). |
-| `par_ase_het_snps_filtered.vcf.gz` | Heterozygous SNPs suitable for ASE analysis based on the Paragon GCA949126075v1 reference. |
-| `par_het_snps_filtered.vcf.zip` | Heterozygous SNPs based on the Paragon GCA949126075v1 reference (not restricted to ASE sites). |
+| [`wheat_ase_het_snps_filtered.vcf.gz`](wheat_ase_het_snps_filtered.vcf.gz) | Heterozygous SNPs suitable for ASE analysis based on the IWGSC RefSeq v2.1 reference. |
+| [`wheat_het_snps_filtered.vcf.zip`](wheat_het_snps_filtered.vcf.zip) | Heterozygous SNPs based on the IWGSC RefSeq v2.1 reference, not restricted to ASE sites. |
+| [`par_ase_het_snps_filtered.vcf.gz`](par_ase_het_snps_filtered.vcf.gz) | Heterozygous SNPs suitable for ASE analysis based on the Paragon GCA949126075v1 reference. |
+| [`par_het_snps_filtered.vcf.zip`](par_het_snps_filtered.vcf.zip) | Heterozygous SNPs based on the Paragon GCA949126075v1 reference, not restricted to ASE sites. |
 
 ### Allele-specific expression data
 
 | File or folder | Description |
 |---|---|
-| `ASE data/` | Folder containing Chinese Spring and Paragon allele counts for hybrid genotypes. Files without `_par_` were generated by mapping to IWGSC RefSeq v2.1. Files with `_par_` were generated by mapping to GCA949126075v1. |
-| `all_res_CS.csv` | MBASED test for allele-specific expression relative to the median Chinese Spring allele frequency across all sites, using IWGSC RefSeq v2.1. |
-| `all_res_CS_0.5.csv` | MBASED test for allele-specific expression relative to an expected 50:50 reference-to-alternate allele ratio, using IWGSC RefSeq v2.1. |
-| `all_res_PAR.csv` | MBASED test for allele-specific expression relative to the median Chinese Spring allele frequency across all sites, using GCA949126075v1. |
-| `Ref_vs_Alt.csv` | Linear-model test for allele-specific expression relative to an expected 50:50 reference-to-alternate allele ratio, using IWGSC RefSeq v2.1. |
-| `Ref_vs_Alt_par.csv` | Linear-model test for allele-specific expression relative to an expected 50:50 reference-to-alternate allele ratio, using GCA949126075v1. |
+| [`ASE data/`](ASE%20data/) | Folder containing Chinese Spring and Paragon allele counts for hybrid genotypes. Files without `_par_` were generated by mapping to IWGSC RefSeq v2.1. Files with `_par_` were generated by mapping to GCA949126075v1. |
+| [`all_res_CS.csv`](all_res_CS.csv) | MBASED test for allele-specific expression relative to the median Chinese Spring allele frequency across all sites, using IWGSC RefSeq v2.1. |
+| [`all_res_CS_0.5.csv`](all_res_CS_0.5.csv) | MBASED test for allele-specific expression relative to an expected 50:50 reference-to-alternate allele ratio, using IWGSC RefSeq v2.1. |
+| [`all_res_PAR.csv`](all_res_PAR.csv) | MBASED test for allele-specific expression relative to the median Chinese Spring allele frequency across all sites, using GCA949126075v1. |
+| [`Ref_vs_Alt.csv`](Ref_vs_Alt.csv) | Linear-model test for allele-specific expression relative to an expected 50:50 reference-to-alternate allele ratio, using IWGSC RefSeq v2.1. |
+| [`Ref_vs_Alt_par.csv`](Ref_vs_Alt_par.csv) | Linear-model test for allele-specific expression relative to an expected 50:50 reference-to-alternate allele ratio, using GCA949126075v1. |
 
 ### Differential expression results
 
 | File | Description |
-|------|-------------|
-| `CSvP all genes.csv` | Differential expression results for Chinese Spring vs Paragon using IWGSC RefSeq v2.1. |
-| `CSvP all genes_PAR.csv` | Differential expression results for Chinese Spring vs Paragon using GCA949126075v1. |
-| `CS_PvCSxP all genes.csv` | Differential expression results for parents vs hybrids using IWGSC RefSeq v2.1. |
-| `CS_PvCSxP all genes_PAR.csv` | Differential expression results for parents vs hybrids using GCA949126075v1. |
-| `triads_CS_P.csv` | Triads with one or more homoeologs differentially expressed between Chinese Spring (CS) and Paragon (IWGSC RefSeq v2.1). “Up” indicates higher expression in hybrids; “Down” indicates higher expression in parents. |
-| `triads_hybrids_parents.csv` | Triads with one or more homoeologs differentially expressed between mid-parental estimates and hybrids (IWGSC RefSeq v2.1). “Up” indicates higher expression in CS; “Down” indicates higher expression in Paragon. |
+|---|---|
+| [`CSvP all genes.csv`](CSvP%20all%20genes.csv) | Differential expression results for Chinese Spring vs Paragon using IWGSC RefSeq v2.1. |
+| [`CSvP all genes_PAR.csv`](CSvP%20all%20genes_PAR.csv) | Differential expression results for Chinese Spring vs Paragon using GCA949126075v1. |
+| [`CS_PvCSxP all genes.csv`](CS_PvCSxP%20all%20genes.csv) | Differential expression results for parents vs hybrids using IWGSC RefSeq v2.1. |
+| [`CS_PvCSxP all genes_PAR.csv`](CS_PvCSxP%20all%20genes_PAR.csv) | Differential expression results for parents vs hybrids using GCA949126075v1. |
+| [`triads_CS_P.csv`](triads_CS_P.csv) | Triads with one or more homoeologs differentially expressed between Chinese Spring and Paragon using IWGSC RefSeq v2.1. “Up” indicates higher expression in hybrids; “Down” indicates higher expression in parents. |
+| [`triads_hybrids_parents.csv`](triads_hybrids_parents.csv) | Triads with one or more homoeologs differentially expressed between mid-parental estimates and hybrids using IWGSC RefSeq v2.1. “Up” indicates higher expression in CS; “Down” indicates higher expression in Paragon. |
 
 ### Regulatory classification files
 
 | File | Description |
 |---|---|
-| `classified_McManus.csv` | Regulatory classifications based on beta-binomial ASE models implemented with MBASED, using IWGSC RefSeq v2.1. |
-| `classified_limma.csv` | Regulatory classifications based on linear-model ASE tests, using IWGSC RefSeq v2.1. |
-| `classified_McManus_par.csv` | Regulatory classifications based on beta-binomial ASE models implemented with MBASED, using GCA949126075v1. |
-| `classified_limma_par.csv` | Regulatory classifications based on linear-model ASE tests, using GCA949126075v1. |
-| `classified_all.csv` | Regulatory classifications based on the intersection of MBASED and linear-model ASE classifications, using IWGSC RefSeq v2.1. |
-| `classified_all_par.csv` | Regulatory classifications based on the intersection of MBASED and linear-model ASE classifications, using GCA949126075v1. |
-| `Regulatory_Classification.txt` | Final gene regulatory classifications retained when consistent across MBASED and linear-model ASE classifications and across both reference mappings. |
+| [`classified_McManus.csv`](classified_McManus.csv) | Regulatory classifications based on beta-binomial ASE models implemented with MBASED, using IWGSC RefSeq v2.1. |
+| [`classified_limma.csv`](classified_limma.csv) | Regulatory classifications based on linear-model ASE tests, using IWGSC RefSeq v2.1. |
+| [`classified_McManus_par.csv`](classified_McManus_par.csv) | Regulatory classifications based on beta-binomial ASE models implemented with MBASED, using GCA949126075v1. |
+| [`classified_limma_par.csv`](classified_limma_par.csv) | Regulatory classifications based on linear-model ASE tests, using GCA949126075v1. |
+| [`classified_all.csv`](classified_all.csv) | Regulatory classifications based on the intersection of MBASED and linear-model ASE classifications, using IWGSC RefSeq v2.1. |
+| [`classified_all_par.csv`](classified_all_par.csv) | Regulatory classifications based on the intersection of MBASED and linear-model ASE classifications, using GCA949126075v1. |
+| [`Regulatory_Classification.txt`](Regulatory_Classification.txt) | Final gene regulatory classifications retained when consistent across MBASED and linear-model ASE classifications and across both reference mappings. |
