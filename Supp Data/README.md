@@ -17,6 +17,7 @@
 | [`transcript_to_gene_paragon.GCA949126075v1.csv`](transcript_to_gene_paragon.GCA949126075v1.csv) | Mapping of transcript IDs to gene IDs for Paragon GCA949126075v1. |
 | [`part_sizes.txt`](part_sizes.txt) | Chromosome part sizes for Chinese Spring IWGSC RefSeq v2.1. |
 | [`Paragon_part_chr_sizes.txt`](Paragon_part_chr_sizes.txt) | Chromosome part sizes for Paragon GCA949126075v1. |
+| [`161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed`](161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed)  | Chromosome part sizes for IWGSC v1.0. |
 
 ### Expression quantification files
 
