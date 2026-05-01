@@ -582,7 +582,7 @@ awk 'BEGIN{OFS="\t"} {print $1, $2+1}' ct_snps.bed > ct_snps.pos.txt
 awk 'BEGIN{FS=OFS="\t"} NR==FNR{a[$1 FS $2]; next} FNR==1 || !(($1 FS $2) in a)' ct_snps.pos.txt <(zcat merged_CHH_fullchr.txt.gz) | gzip > merged_CHH_all.txt.gz
 ```
 
-28. Subset CDS regions from methylation sites. Remove any duplicate positions
+28. Subset CDS regions from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b IWGSC_v1.1_to_v2.1_promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_promoter1kb.txt.gz
 zcat merged_CG_symmetric_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp && mv tmp merged_CG_symmetric_CDS.txt.gz
@@ -595,7 +595,7 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 
 ```
 
-29. Subset promoter regions (1Kb upstream) from methylation sites. Remove any duplicate positions
+29. Subset promoter regions (1Kb upstream) from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b IWGSC_v1.1_to_v2.1_CDS.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_CDS.txt.gz
 
