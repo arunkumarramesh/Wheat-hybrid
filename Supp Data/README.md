@@ -18,6 +18,8 @@
 | [`part_sizes.txt`](part_sizes.txt) | Chromosome part sizes for Chinese Spring IWGSC RefSeq v2.1. |
 | [`Paragon_part_chr_sizes.txt`](Paragon_part_chr_sizes.txt) | Chromosome part sizes for Paragon GCA949126075v1. |
 | [`161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed`](161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed)  | Chromosome part sizes for IWGSC v1.0. |
+| [`CDS.bed`](CDS.bed.gz)  | CDS interval for longest transcript |
+| [`promoter1kb.bed`](promoter1kb.bed.gz)  | 1Kb Promoter interval |
 
 ### Expression quantification files
 
