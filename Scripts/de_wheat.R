@@ -31,11 +31,11 @@ cpm_log_forpca <- cpm_log
 pca <- prcomp(t(cpm_log_forpca), scale. = TRUE) ## do pca
 ## plot of pca with groups in ellipses
 CSpca <- fviz_pca_ind(pca,
-                      col.ind = Group, # color by groups
+                      col.ind = Group,
                       palette = c("#0072B2", "#E69F00", "#009E73", "#CC79A7"),
                       legend.title = "Genotypes",
                       repel = TRUE,
-                      pointshape = 16,                                  # filled circles
+                      pointshape = 16,
                       pointsize  = 3,
                       mean.point = FALSE, 
                       title = ""
@@ -145,11 +145,11 @@ cpm_log_forpca <- cpm_log
 pca <- prcomp(t(cpm_log_forpca), scale. = TRUE) ## do pca
 ## plot of pca with groups in ellipses
 CSpca <- fviz_pca_ind(pca,
-                      col.ind = Group, # color by groups
+                      col.ind = Group,
                       palette = c("#0072B2", "#E69F00", "#CC79A7"),
                       legend.title = "Genotypes",
                       repel = TRUE,
-                      pointshape = 16,                                  # filled circles
+                      pointshape = 16,
                       pointsize  = 3,
                       mean.point = FALSE, 
                       title = paste("n=",nrow(cpm_log)," genes",sep="")
@@ -260,15 +260,47 @@ nrow(all.CS_PvCSxP[all.CS_PvCSxP$adj.P.Val < 0.05 & all.CS_PvCSxP$logFC < -0.58,
 nrow(all.CSvP)
 
 ## for venn diagram
-vennfit <- euler(c(
-  "CS vs Paragon" = nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & abs(all.CSvP$logFC) > 0.58,]),
-  "Parents vs Hybrids" = nrow(all.CS_PvCSxP[all.CS_PvCSxP$adj.P.Val < 0.05 & abs(all.CS_PvCSxP$logFC) > 0.58,]),
-  "CS vs Paragon&Parents vs Hybrids" = nrow(all.CSvP[all.CSvP$adj.P.Val < 0.05 & abs(all.CSvP$logFC) > 0.58 & rownames(all.CSvP) %in% rownames(all.CS_PvCSxP[all.CS_PvCSxP$adj.P.Val < 0.05 & abs(all.CS_PvCSxP$logFC) > 0.58,]),])
-))
-pdf("venn.pdf",height=3,width = 4)
-plot(vennfit, quantities = TRUE, legend = TRUE, main = "",fills = c("#0072B2", "#E69F00"))
+keep_A_CSvP <- grepl("^TraesCS[0-9]+A", rownames(all.CSvP))
+keep_A_PvH  <- grepl("^TraesCS[0-9]+A", rownames(all.CS_PvCSxP))
+all.CSvP_A <- all.CSvP[keep_A_CSvP, ]
+all.CS_PvCSxP_A <- all.CS_PvCSxP[keep_A_PvH, ]
+sig_CSvP_A <- rownames(all.CSvP_A)[all.CSvP_A$adj.P.Val < 0.05 & abs(all.CSvP_A$logFC) > 0.58]
+sig_PvH_A <- rownames(all.CS_PvCSxP_A)[all.CS_PvCSxP_A$adj.P.Val < 0.05 & abs(all.CS_PvCSxP_A$logFC) > 0.58]
+total_A_genes <- length(intersect(rownames(all.CSvP_A), rownames(all.CS_PvCSxP_A)))
+
+vennfit <- euler(c("CS vs Paragon" = length(sig_CSvP_A),"Parents vs Hybrids" = length(sig_PvH_A),"CS vs Paragon&Parents vs Hybrids" = length(intersect(sig_CSvP_A, sig_PvH_A))))
+
+pdf("venn_A_subgenome.pdf", height = 3, width = 4)
+plot(vennfit,quantities = TRUE,legend = TRUE,main = paste0("A:", total_A_genes,sep=""),fills = c("#0072B2", "#E69F00"))
 dev.off()
 
+keep_B_CSvP <- grepl("^TraesCS[0-9]+B", rownames(all.CSvP))
+keep_B_PvH  <- grepl("^TraesCS[0-9]+B", rownames(all.CS_PvCSxP))
+all.CSvP_B <- all.CSvP[keep_B_CSvP, ]
+all.CS_PvCSxP_B <- all.CS_PvCSxP[keep_B_PvH, ]
+sig_CSvP_B <- rownames(all.CSvP_B)[all.CSvP_B$adj.P.Val < 0.05 & abs(all.CSvP_B$logFC) > 0.58]
+sig_PvH_B <- rownames(all.CS_PvCSxP_B)[all.CS_PvCSxP_B$adj.P.Val < 0.05 & abs(all.CS_PvCSxP_B$logFC) > 0.58]
+total_B_genes <- length(intersect(rownames(all.CSvP_B), rownames(all.CS_PvCSxP_B)))
+
+vennfit <- euler(c("CS vs Paragon" = length(sig_CSvP_B),"Parents vs Hybrids" = length(sig_PvH_B),"CS vs Paragon&Parents vs Hybrids" = length(intersect(sig_CSvP_B, sig_PvH_B))))
+
+pdf("venn_B_subgenome.pdf", height = 3, width = 4)
+plot(vennfit,quantities = TRUE,legend = TRUE,main = paste0("B=", total_B_genes,sep=""),fills = c("#0072B2", "#E69F00"))
+dev.off()
+
+keep_D_CSvP <- grepl("^TraesCS[0-9]+D", rownames(all.CSvP))
+keep_D_PvH  <- grepl("^TraesCS[0-9]+D", rownames(all.CS_PvCSxP))
+all.CSvP_D <- all.CSvP[keep_D_CSvP, ]
+all.CS_PvCSxP_D <- all.CS_PvCSxP[keep_D_PvH, ]
+sig_CSvP_D <- rownames(all.CSvP_D)[all.CSvP_D$adj.P.Val < 0.05 & abs(all.CSvP_D$logFC) > 0.58]
+sig_PvH_D <- rownames(all.CS_PvCSxP_D)[all.CS_PvCSxP_D$adj.P.Val < 0.05 & abs(all.CS_PvCSxP_D$logFC) > 0.58]
+total_D_genes <- length(intersect(rownames(all.CSvP_D), rownames(all.CS_PvCSxP_D)))
+
+vennfit <- euler(c("CS vs Paragon" = length(sig_CSvP_D),"Parents vs Hybrids" = length(sig_PvH_D),"CS vs Paragon&Parents vs Hybrids" = length(intersect(sig_CSvP_D, sig_PvH_D))))
+
+pdf("venn_D_subgenome.pdf", height = 3, width = 4)
+plot(vennfit,quantities = TRUE,legend = TRUE,main = paste0("D=", total_D_genes,sep=""),fills = c("#0072B2", "#E69F00"))
+dev.off()
 
 ### now using par reference
 
@@ -351,11 +383,11 @@ cpm_log_forpca <- cpm_log
 pca <- prcomp(t(cpm_log_forpca), scale. = TRUE) ## do pca
 ## plot of pca with groups in ellipses
 PARpca <- fviz_pca_ind(pca,
-                       col.ind = Group, # color by groups
+                       col.ind = Group,
                        palette = c("#0072B2","#E69F00","#CC79A7"),
                        legend.title = "Genotype",
                        repel = TRUE,
-                       pointshape = 16,                                  # filled circles
+                       pointshape = 16,
                        pointsize  = 3,
                        mean.point = FALSE, 
                        title = paste("n=",nrow(cpm_log)," genes",sep="")

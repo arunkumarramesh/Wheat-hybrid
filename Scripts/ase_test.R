@@ -265,9 +265,6 @@ counts_mat <- all_res %>%
 
 testdat <- pval_mat[complete.cases(pval_mat),]
 testdat <- testdat[apply(testdat,1,sd)>0,]
-pdf("ase_persample_pval.pdf",height=3.5,width=4)
-Heatmap(testdat, name = "P-value", show_row_names = FALSE, use_raster = F)
-dev.off()
 
 ## Some genes vary depending on direction of the cross
 
@@ -387,16 +384,16 @@ classified <- all_genes %>%
 
 classified_McManus <- classified
 write.csv(classified_McManus,file="classified_McManus.csv",row.names = F)
-counts_McManus <- as.data.frame(table(classified$category))
-names(counts_McManus) <- c("category", "count")
+classified_A <- classified %>% filter(grepl("^TraesCS[0-9]+A", gene))
 
-props_McManus <- prop.table(table(classified$category))
+counts_McManus_A <- as.data.frame(table(classified_A$category))
+names(counts_McManus_A) <- c("category", "count")
+props_McManus_A <- prop.table(table(classified_A$category))
+df_McManus_A <- counts_McManus_A %>%
+  mutate(prop = as.numeric(props_McManus_A[as.character(category)]), category = factor(category, levels = category))
 
-df_McManus <- counts_McManus %>%
-  mutate(prop = as.numeric(props_McManus[as.character(category)]), category = factor(category, levels = category))
-
-pdf(file="McManus_classification.pdf",height=3.5,width=4)
-ggplot(df_McManus, aes(x = category, y = prop, fill = category)) +
+pdf(file="McManus_classification_A_subgenome.pdf",height=3.5,width=4)
+ggplot(df_McManus_A, aes(x = category, y = prop, fill = category)) +
   geom_col() +
   geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
   scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
@@ -406,7 +403,57 @@ ggplot(df_McManus, aes(x = category, y = prop, fill = category)) +
     x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
     x
   }) +
-  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_McManus))) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("A:",nrow(classified_A))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
+dev.off()
+
+classified_B <- classified %>% filter(grepl("^TraesCS[0-9]+B", gene))
+
+counts_McManus_B <- as.data.frame(table(classified_B$category))
+names(counts_McManus_B) <- c("category", "count")
+props_McManus_B <- prop.table(table(classified_B$category))
+df_McManus_B <- counts_McManus_B %>%
+  mutate(prop = as.numeric(props_McManus_B[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="McManus_classification_B_subgenome.pdf",height=3.5,width=4)
+ggplot(df_McManus_B, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#FC8D62","#8DA0CB","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("B:",nrow(classified_B))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
+dev.off()
+
+classified_D <- classified %>% filter(grepl("^TraesCS[0-9]+D", gene))
+
+counts_McManus_D <- as.data.frame(table(classified_D$category))
+names(counts_McManus_D) <- c("category", "count")
+props_McManus_D <- prop.table(table(classified_D$category))
+df_McManus_D <- counts_McManus_D %>%
+  mutate(prop = as.numeric(props_McManus_D[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="McManus_classification_D_subgenome.pdf",height=3.5,width=4)
+ggplot(df_McManus_D, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#FC8D62","#8DA0CB","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("D:",nrow(classified_D))) +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
   coord_cartesian(clip = "off")
@@ -562,14 +609,17 @@ classified <- all_genes %>%
 
 classified_limma <- classified
 write.csv(classified_limma,file="classified_limma.csv",row.names = F)
-counts_limma <- as.data.frame(table(classified$category))
-names(counts_limma) <- c("category", "count")
-props_limma <- prop.table(table(classified$category))
-df_limma <- counts_limma %>%
-  mutate(prop = as.numeric(props_limma[as.character(category)]), category = factor(category, levels = category))
 
-pdf(file="limma_classification.pdf",height=3.5,width=4)
-ggplot(df_limma, aes(x = category, y = prop, fill = category)) +
+classified_limma_A <- classified_limma %>% filter(grepl("^TraesCS[0-9]+A", gene))
+
+counts_limma_A <- as.data.frame(table(classified_limma_A$category))
+names(counts_limma_A) <- c("category", "count")
+props_limma_A <- prop.table(table(classified_limma_A$category))
+df_limma_A <- counts_limma_A %>%
+  mutate(prop = as.numeric(props_limma_A[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="limma_classification_A_subgenome.pdf",height=3.5,width=4)
+ggplot(df_limma_A, aes(x = category, y = prop, fill = category)) +
   geom_col() +
   geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
   scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
@@ -579,7 +629,57 @@ ggplot(df_limma, aes(x = category, y = prop, fill = category)) +
     x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
     x
   }) +
-  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_limma))) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("A:",nrow(classified_limma_A))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
+dev.off()
+
+classified_limma_B <- classified_limma %>% filter(grepl("^TraesCS[0-9]+B", gene))
+
+counts_limma_B <- as.data.frame(table(classified_limma_B$category))
+names(counts_limma_B) <- c("category", "count")
+props_limma_B <- prop.table(table(classified_limma_B$category))
+df_limma_B <- counts_limma_B %>%
+  mutate(prop = as.numeric(props_limma_B[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="limma_classification_B_subgenome.pdf",height=3.5,width=4)
+ggplot(df_limma_B, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#FC8D62","#8DA0CB","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("B:",nrow(classified_limma_B))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
+dev.off()
+
+classified_limma_D <- classified_limma %>% filter(grepl("^TraesCS[0-9]+D", gene))
+
+counts_limma_D <- as.data.frame(table(classified_limma_D$category))
+names(counts_limma_D) <- c("category", "count")
+props_limma_D <- prop.table(table(classified_limma_D$category))
+df_limma_D <- counts_limma_D %>%
+  mutate(prop = as.numeric(props_limma_D[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="limma_classification_D_subgenome.pdf",height=3.5,width=4)
+ggplot(df_limma_D, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#FC8D62","#8DA0CB","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("D:",nrow(classified_limma_D))) +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
   coord_cartesian(clip = "off")
@@ -613,15 +713,16 @@ dim(classified_all)
 classified_all <- classified_all %>%
   mutate(category = ifelse(category.x == category.y, category.x, "Ambiguous"))
 classified_all <- classified_all[c(1,4)]
-counts_all <- as.data.frame(table(classified_all$category))
-names(counts_all) <- c("category", "count")
-props_all <- prop.table(table(classified_all$category))
-df_all <- counts_all %>%
-  mutate(prop = as.numeric(props_all[as.character(category)]), category = factor(category, levels = category))
-write.csv(classified_all,file="classified_all.csv",row.names = F)
+classified_all_A <- classified_all %>% filter(grepl("^TraesCS[0-9]+A", gene))
 
-pdf(file="McManus_limma_classification.pdf",height=3.5,width=4)
-ggplot(df_all, aes(x = category, y = prop, fill = category)) +
+counts_all_A <- as.data.frame(table(classified_all_A$category))
+names(counts_all_A) <- c("category", "count")
+props_all_A <- prop.table(table(classified_all_A$category))
+df_all_A <- counts_all_A %>%
+  mutate(prop = as.numeric(props_all_A[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="all_classification_A_subgenome.pdf",height=3.5,width=4)
+ggplot(df_all_A, aes(x = category, y = prop, fill = category)) +
   geom_col() +
   geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
   scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
@@ -631,11 +732,64 @@ ggplot(df_all, aes(x = category, y = prop, fill = category)) +
     x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
     x
   }) +
-  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_limma))) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("A:",nrow(classified_all_A))) +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
   coord_cartesian(clip = "off")
 dev.off()
+
+classified_all_B <- classified_all %>% filter(grepl("^TraesCS[0-9]+B", gene))
+
+counts_all_B <- as.data.frame(table(classified_all_B$category))
+names(counts_all_B) <- c("category", "count")
+props_all_B <- prop.table(table(classified_all_B$category))
+df_all_B <- counts_all_B %>%
+  mutate(prop = as.numeric(props_all_B[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="all_classification_B_subgenome.pdf",height=3.5,width=4)
+ggplot(df_all_B, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("B:",nrow(classified_all_B))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
+dev.off()
+
+classified_all_D <- classified_all %>% filter(grepl("^TraesCS[0-9]+D", gene))
+
+counts_all_D <- as.data.frame(table(classified_all_D$category))
+names(counts_all_D) <- c("category", "count")
+props_all_D <- prop.table(table(classified_all_D$category))
+df_all_D <- counts_all_D %>%
+  mutate(prop = as.numeric(props_all_D[as.character(category)]), category = factor(category, levels = category))
+
+pdf(file="all_classification_D_subgenome.pdf",height=3.5,width=4)
+ggplot(df_all_D, aes(x = category, y = prop, fill = category)) +
+  geom_col() +
+  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
+  scale_fill_manual(values = c("#66C2A5","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
+  scale_x_discrete(labels = function(x) {
+    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
+    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+    x
+  }) +
+  labs(x = NULL, y = "Proportion of genes", title = paste("D:",nrow(classified_all_D))) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
+  coord_cartesian(clip = "off")
+dev.off()
+
+cowplot()
+## gene ontology analysis
 
 all_go_subset <- subset(all_go, Gene %in% classified_McManus$gene)
 degenes <- classified_McManus$gene
