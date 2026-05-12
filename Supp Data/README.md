@@ -74,3 +74,20 @@
 | [`classified_all.csv`](classified_all.csv) | Regulatory classifications based on the intersection of MBASED and linear-model ASE classifications, using IWGSC RefSeq v2.1. |
 | [`classified_all_par.csv`](classified_all_par.csv) | Regulatory classifications based on the intersection of MBASED and linear-model ASE classifications, using GCA949126075v1. |
 | [`Regulatory_Classification.txt`](Regulatory_Classification.txt) | Final gene regulatory classifications retained when consistent across MBASED and linear-model ASE classifications and across both reference mappings. |
+
+
+### Methylation files
+
+| File | Description |
+|---|---|
+| [`gene_level_TE_CG.tsv`](gene_level_TE_CG.tsv) | Mean CG methylation of transposable elements near bread wheat genes. |
+| [`gene_level_TE_CHG.tsv`](gene_level_TE_CHG.tsv) | Mean CHG methylation of transposable elements near bread wheat genes. |
+| [`gene_level_TE_CHH.tsv`](gene_level_TE_CHH.tsv) | Mean CHH methylation of transposable elements near bread wheat genes. |
+| [`gene_body_methylation.tsv.zip`](gene_body_methylation.tsv.zip) | Classification of genes as gbM or non-gbM in Chinese Spring, Paragon, and their hybrid. |
+| [`gbM_by_regulatory_state.csv`](gbM_by_regulatory_state.csv) | gbM and non-gbM classifications combined with gene regulatory classifications. |
+| [`Methylation_Regulatory_cg_cds.txt`](Methylation_Regulatory_cg_cds.txt) | Regulatory classifications combined with CG methylation inheritance classifications in coding sequences. |
+| [`Methylation_Regulatory_chg_cds.txt`](Methylation_Regulatory_chg_cds.txt) | Regulatory classifications combined with CHG methylation inheritance classifications in coding sequences. |
+| [`Methylation_Regulatory_chh_cds.txt`](Methylation_Regulatory_chh_cds.txt) | Regulatory classifications combined with CHH methylation inheritance classifications in coding sequences. |
+| [`Methylation_Regulatory_cg_promoter.txt`](Methylation_Regulatory_cg_promoter.txt) | Regulatory classifications combined with CG methylation inheritance classifications in 1 kb promoter regions. |
+| [`Methylation_Regulatory_chg_promoter.txt`](Methylation_Regulatory_chg_promoter.txt) | Regulatory classifications combined with CHG methylation inheritance classifications in 1 kb promoter regions. |
+| [`Methylation_Regulatory_chh_promoter.txt`](Methylation_Regulatory_chh_promoter.txt) | Regulatory classifications combined with CHH methylation inheritance classifications in 1 kb promoter regions. |
