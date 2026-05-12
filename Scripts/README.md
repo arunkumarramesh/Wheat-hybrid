@@ -619,7 +619,7 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 
 python3 subset_chh_by_cds.py promoter1kb.bed merged_CHH_all.txt.gz merged_CHH_promoter1kb.txt.gz
 ```
-33. Subset TE regions from methylation sites. 
+33. Subset TE regions from methylation sites. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 awk -v OFS="\t" 'BEGIN{FS="\t"} function get_attr(attrs,key,n,i,a,kv){n=split(attrs,a,";");for(i=1;i<=n;i++){gsub(/^ +| +$/,"",a[i]);split(a[i],kv,"=");if(kv[1]==key)return kv[2]}return "."} $0!~/^#/ && ($3=="match" || $3=="repeat_region") && $1~/^[Cc]hr[1-7][ABD]$/ {chr=$1;sub(/^chr/,"Chr",chr);id=get_attr($9,"ID");compo=get_attr($9,"compo");copie=get_attr($9,"copie");post=get_attr($9,"post");status=get_attr($9,"status");split(compo,c,/ +/);te_consensus=c[1];te_consensus_pct=c[2];te_family=te_consensus;sub(/\.[0-9]+$/,"",te_family);split(te_family,a,"_");te_class=a[1];gsub(/[ \t]+/,",",compo);gsub(/[ \t]+/,",",post);subgenome=substr(chr,length(chr),1);te_length=$5-$4+1;print chr,$4-1,$5,id,".",$7,te_class,te_family,te_consensus,te_consensus_pct,status,copie,compo,post,te_length,subgenome}' iwgsc_refseqv1.0_TransposableElements_2017Mar13.gff3 | sort -k1,1 -k2,2n > TEs.metadata.bed
 awk -v OFS="\t" 'BEGIN{FS="\t"} function get_attr(attrs,key,n,i,a,kv){n=split(attrs,a,";");for(i=1;i<=n;i++){gsub(/^ +| +$/,"",a[i]);split(a[i],kv,"=");if(kv[1]==key)return kv[2]}return "."} $0!~/^#/ && $3=="gene" && $1~/^[Cc]hr[1-7][ABD]$/ {chr=$1;sub(/^chr/,"Chr",chr);id=get_attr($9,"ID");print chr,$4-1,$5,id,".",$7}' IWGSC_v1.1_HC_20170706.gff3 | sort -k1,1 -k2,2n > genes.bed
