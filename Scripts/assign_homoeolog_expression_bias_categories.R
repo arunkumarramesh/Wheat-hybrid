@@ -1128,13 +1128,9 @@ ggplot(df_compare_subgenomes, aes(x = y_cat, y = x_cat, fill = n)) +
   geom_text(aes(label = n), size = 3) +
   facet_wrap(~ pair, nrow = 1) +
   scale_fill_gradient(low = "white", high = "steelblue", name = "Count") +
-  labs(x = "", y = "",
-       title = "") +
+  labs(x = "", y = "",title = "") +
   theme_minimal(base_size = 12) +
-  theme(
-    axis.text.x = element_markdown(angle = 90, hjust = 1),
-    axis.text.y = element_markdown()
-  ) +
+  theme(axis.text.x = element_markdown(angle = 90, hjust = 1),axis.text.y = element_markdown()) +
   scale_x_discrete(labels = ital) +
   scale_y_discrete(labels = ital) +
   coord_equal()
@@ -1153,7 +1149,6 @@ bias_categories_ase_sub <- bias_categories_ase_sub %>%
 label_cis_trans_md <- function(x) {
   str_replace_all(x,regex("\\b(cis|trans)\\b", ignore_case = TRUE),~ paste0("<i>", .x, "</i>"))
 }
-
 
 cat_counts <- bias_categories_ase_sub %>%
   dplyr::count(cat_canonical, name = "n")
