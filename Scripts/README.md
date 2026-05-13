@@ -636,3 +636,5 @@ Rscript gene_cg_te.R
 Rscript gene_chg_te.R
 Rscript genen_chh_te.R 
 ```
+
+34. Plot methylation results using boman_classification_gene.R, gbM_wheat.R, and te_meth.R
