@@ -1161,7 +1161,7 @@ cv_labels <- HSD.test(aov(CV ~ cat_canonical, data = bias_categories_ase_sub),"c
 homologies_McManus_plot_a <- ggplot(data = bias_categories_ase_sub,aes(x = cat_canonical, y = CV)) +
   geom_boxplot() +
   xlab("") +
-  ylab("CV") +
+  ylab("HEB") +
   geom_text(data = cv_labels,aes(cat_canonical, y = 1.3, label = label),vjust = 0.5) +
   coord_flip() +
   scale_x_discrete(labels = label_cis_trans_md) +
