@@ -83,6 +83,8 @@
 | [`gene_level_TE_CG.tsv`](gene_level_TE_CG.tsv) | Mean CG methylation of transposable elements near bread wheat genes. |
 | [`gene_level_TE_CHG.tsv`](gene_level_TE_CHG.tsv) | Mean CHG methylation of transposable elements near bread wheat genes. |
 | [`gene_level_TE_CHH.tsv`](gene_level_TE_CHH.tsv) | Mean CHH methylation of transposable elements near bread wheat genes. |
+| [`CDS_meth_pct.txt.zip`](CDS_meth_pct.txt.zip) | Mean CG, CHG and CHH methylation across CDS of bread wheat genes. |
+| [`promoter_meth_pct.txt.zip`](promoter_meth_pct.txt.zip) | Mean CG, CHG and CHH methylation across promoters of bread wheat genes. |
 | [`gene_body_methylation.tsv.zip`](gene_body_methylation.tsv.zip) | Classification of genes as gbM or non-gbM in Chinese Spring, Paragon, and their hybrid. |
 | [`gbM_by_regulatory_state.csv`](gbM_by_regulatory_state.csv) | gbM and non-gbM classifications combined with gene regulatory classifications. |
 | [`Methylation_Regulatory_cg_cds.txt`](Methylation_Regulatory_cg_cds.txt) | Regulatory classifications combined with CG methylation inheritance classifications in coding sequences. |
