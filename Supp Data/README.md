@@ -20,6 +20,7 @@
 | [`161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed`](161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed)  | Chromosome part sizes for IWGSC v1.0. |
 | [`CDS.bed`](CDS.bed.gz)  | CDS interval for longest transcript |
 | [`promoter1kb.bed`](promoter1kb.bed.gz)  | 1Kb Promoter interval |
+| [`cs_par_snps_50kb_counts.tsv`](cs_par_snps_50kb_counts.tsv)  | Number of SNVs per 50kb between IWGSC v1.0  and GCA949126075v1 reference.|
 
 ### Expression quantification files
 
