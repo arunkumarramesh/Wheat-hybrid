@@ -85,8 +85,10 @@ process_methylation_file <- function(infile, out_suffix, context, region, remove
   colnames(summary_dt) <- c("subgenome", "category", "N")
   summary_dt$subgenome <- factor(summary_dt$subgenome, levels = c("A", "B", "D"))
   summary_dt$category <- factor(summary_dt$category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant"))
-  
   summary_dt$proportion <- ave(summary_dt$N,summary_dt$subgenome,FUN = function(x) x / sum(x))
+  summary_dt_all <- dt[, .N, by = category]
+  summary_dt_all[, proportion := N / sum(N)]
+  summary_dt_all$category <- factor(summary_dt_all$category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant"))
   
   panel_counts_all <- as.data.table(table(dt$subgenome))
   colnames(panel_counts_all) <- c("subgenome", "N")
@@ -107,6 +109,15 @@ process_methylation_file <- function(infile, out_suffix, context, region, remove
   meth_summary$context <- context
   meth_summary$region <- region
   
+  p1 <- ggplot(summary_dt_all,aes(x = category,y = proportion,fill = category)) +
+    geom_col(width = 0.8,linewidth = 0.2) +
+    geom_text(aes(label = percent(proportion,accuracy = 0.1)),vjust = -0.35,size = 3.2,fontface = "bold") +
+    scale_fill_manual(values = cat_cols) +
+    scale_y_continuous(labels = percent_format(accuracy = 1),expand = expansion(mult = c(0,0.12))) +
+    labs(title = paste0(region," ",context," (n=",sum(summary_dt_all$N),")"),x = NULL,y = "Percentage of sites") +
+    theme_bw(base_size = 12) +
+    theme(panel.grid.minor = element_blank(),panel.grid.major = element_line(linewidth = 0.2,colour = "grey90"),plot.title = element_text(face = "bold",hjust = 0.5),axis.title = element_text(face = "bold"),axis.text.x = element_text(angle = 35,hjust = 1),legend.position = "none")
+  
   p2 <- ggplot(summary_dt, aes(x = category, y = proportion, fill = category)) +
     geom_col(width = 0.8, fill = rep(cat_cols,3), linewidth = 0.2) +
     geom_text(aes(label = percent(proportion, accuracy = 0.1)), vjust = -0.35, size = 3.2, fontface = "bold")    +
@@ -120,16 +131,20 @@ process_methylation_file <- function(infile, out_suffix, context, region, remove
   pdf(paste0("met_classify", out_suffix, ".pdf"), width = 7, height = 3)
   print(p2)
   dev.off()
+  
+  pdf(paste0("met_classify_whole", out_suffix, ".pdf"), width = 3.1, height = 3)
+  print(p1)
+  dev.off()
 
   return(meth_summary)
 }
 
 all_meth_summary <- list()
-all_meth_summary[["cg_gene"]] <- process_methylation_file(infile = "merged_CG_symmetric_CDS.txt.gz",out_suffix = "_cg_gene",context = "CG",region = "Gene")
+all_meth_summary[["cg_gene"]] <- process_methylation_file(infile = "merged_CG_symmetric_CDS.txt.gz",out_suffix = "_cg_gene",context = "CG",region = "CDS")
 all_meth_summary[["cg_promoter"]] <- process_methylation_file(infile = "merged_CG_symmetric_promoter1kb.txt.gz",out_suffix = "_cg_promoter",context = "CG",region = "Promoter")
-all_meth_summary[["chg_gene"]] <- process_methylation_file(infile = "merged_CHG_symmetric_CDS.txt.gz",out_suffix = "_chg_gene",context = "CHG",region = "Gene")
+all_meth_summary[["chg_gene"]] <- process_methylation_file(infile = "merged_CHG_symmetric_CDS.txt.gz",out_suffix = "_chg_gene",context = "CHG",region = "CDS")
 all_meth_summary[["chg_promoter"]] <- process_methylation_file(infile = "merged_CHG_symmetric_promoter1kb.txt.gz",out_suffix = "_chg_promoter",context = "CHG",region = "Promoter")
-all_meth_summary[["chh_gene"]] <- process_methylation_file(infile = "merged_CHH_all_CDS.txt.gz",out_suffix = "_chh_gene",context = "CHH",region = "Gene",remove_third_col = TRUE)
+all_meth_summary[["chh_gene"]] <- process_methylation_file(infile = "merged_CHH_all_CDS.txt.gz",out_suffix = "_chh_gene",context = "CHH",region = "CDS",remove_third_col = TRUE)
 all_meth_summary[["chh_promoter"]] <- process_methylation_file(infile = "merged_CHH_promoter1kb.txt.gz",out_suffix = "_chh_promoter",context = "CHH",region = "Promoter",remove_third_col = TRUE)
 
 meth_summary_all <- rbindlist(all_meth_summary)
@@ -452,13 +467,17 @@ chg_long <- process_context("merged_CHG_symmetric_CDS.txt.gz", "CHG", remove_col
 chh_long <- process_context("merged_CHH_all_CDS.txt.gz", "CHH", remove_col3 = TRUE)
 
 meth_long <- rbind(cg_long, chg_long, chh_long)
+write.table(meth_long,file="CDS_meth_pct.txt",row.names=F,sep="\t")
+
+meth_long <- read.table(file="CDS_meth_pct.txt",header=T)
+
 plot_dt <- merge(meth_long, tpm_long, by = c("gene_id", "sample"))
 plot_dt$log2_TPM <- log2(plot_dt$TPM + 1)
 plot_dt$context <- factor(plot_dt$context, levels = c("CG", "CHG", "CHH"))
 cor_results <- data.table(context = c("CG", "CHG", "CHH"), r = NA_real_, p = NA_real_)
 for (i in 1:nrow(cor_results)) {
   x <- plot_dt[plot_dt$context == cor_results$context[i], ]
-  test <- cor.test(x$log2_TPM, x$methylation_pct, method = "pearson")
+  test <- cor.test(x$TPM, x$methylation_pct, method = "pearson")
   cor_results$r[i] <- unname(test$estimate)
   cor_results$p[i] <- test$p.value
 }
@@ -469,25 +488,70 @@ ggplot(plot_dt, aes(x = log2_TPM, y = methylation_pct, colour = context)) +
   geom_smooth(method = "lm", se = TRUE, linewidth = 0.8) +
   geom_text(data = cor_results, aes(x = 13, y = c(10,15,20), label = label, colour = context), inherit.aes = FALSE, hjust = 1, vjust = 1, size = 3) +
   scale_colour_manual(values = c(CG = "#D55E00",CHG = "#56B4E9",CHH = "#999999")) +
-  labs(x = "log2(mean TPM + 1)", y = "Mean Methylation (%)", colour = NULL) +
+  labs(x = "log2(TPM)", y = "Mean Methylation (%)", colour = NULL) +
   theme_bw(base_size = 12) +
   theme(legend.position = "none") +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"), axis.title = element_text(face = "bold"))
 dev.off()
 
+meth_long <- read.table(file="CDS_meth_pct.txt",header=T)
+
+homologies <- read.csv(file="homologies.csv")
+homologies <- homologies[1:4]
+homologies <- as.data.table(homologies)
+hom_long <- melt(homologies, id.vars = "group_id", measure.vars = c("A","B","D"), variable.name = "homoeolog", value.name = "gene_id")
+meth_long <- meth_long[meth_long$gene_id %in% hom_long$gene_id,]
+meth_long <- left_join(meth_long,hom_long,by="gene_id")
+colnames(meth_long)[2] <- "genotype"
+
+bias_categories <- read.csv(file="bias_category_all_samples_inc_orig_expr.csv")
+bias_categories$sample <- gsub("_.*","",bias_categories$sample)
+bias_categories <- bias_categories[!bias_categories$sample %in% "PxCS3",]
+bias_categories$sample <- gsub("PXCS2","PxCS2",bias_categories$sample)
+bias_categories <- bias_categories[!bias_categories$sample %in% c("PxCS1", "PxCS2"),]
+bias_categories <- bias_categories %>%
+  mutate(genotype = sub("[0-9]+$","",as.character(sample))) %>%
+  group_by(group_id,genotype) %>%
+  summarise(A_tpm = mean(A_tpm,na.rm = TRUE),B_tpm = mean(B_tpm,na.rm = TRUE),D_tpm = mean(D_tpm,na.rm = TRUE),.groups = "drop") %>%
+  mutate(triad_tpm = A_tpm + B_tpm + D_tpm,A = A_tpm / triad_tpm,B = B_tpm / triad_tpm,D = D_tpm / triad_tpm)
+bias_categories$CV <- apply(bias_categories[7:9],1,sd)/apply(bias_categories[7:9],1,mean)
+bias_categories$group_id <- as.numeric(gsub("X","",bias_categories$group_id))
+bias_categories_part <- bias_categories[c(1,2,6,10)]
+
+joined_df <- full_join(bias_categories_part,meth_long,by = c("group_id","genotype"))
+joined_df <- joined_df[complete.cases(joined_df),]
+
+cor_df <- joined_df %>%
+  group_by(context) %>%
+  summarise(r = cor(methylation_pct,CV,use = "complete.obs",method = "pearson"),p = cor.test(methylation_pct,CV,method = "pearson")$p.value,.groups = "drop") %>%
+  mutate(label = paste0(context,": R = ",round(r,2),", ",ifelse(p < 0.001,"P < 0.001",paste0("P = ",signif(p,2)))))
+
+pdf(file="heb_cds_meth.pdf",height=2.5,width=2.5)
+ggplot(data = joined_df,aes(y = methylation_pct,x = CV,color = context)) +
+  geom_smooth(method = "lm",se = T,linewidth = 1) +
+  geom_text(data = cor_df,aes(y = c(30,35,40),x = 1.8,label = label,color = context),hjust = 1.05,vjust = 1.2,size = 2,inherit.aes = FALSE,show.legend = FALSE) +
+  scale_colour_manual(values = c(CG = "#D55E00",CHG = "#56B4E9",CHH = "#999999")) +
+  labs(y = "Mean Methylation (%)",x = "HEB",color=NULL) +
+  theme_bw(base_size = 12) +
+  theme(axis.title = element_text(face = "bold"),panel.grid.minor = element_blank(),legend.position = "none")
+dev.off()
 
 cg_long <- process_context("merged_CG_symmetric_promoter1kb.txt.gz", "CG", remove_col3 = FALSE)
 chg_long <- process_context("merged_CHG_symmetric_promoter1kb.txt.gz", "CHG", remove_col3 = FALSE)
 chh_long <- process_context("merged_CHH_promoter1kb.txt.gz", "CHH", remove_col3 = TRUE)
 
 meth_long <- rbind(cg_long, chg_long, chh_long)
+write.table(meth_long,file="promoter_meth_pct.txt",row.names=F,sep="\t")
+
+meth_long <- read.table(file="promoter_meth_pct.txt",header=T)
+
 plot_dt <- merge(meth_long, tpm_long, by = c("gene_id", "sample"))
 plot_dt$log2_TPM <- log2(plot_dt$TPM + 1)
 plot_dt$context <- factor(plot_dt$context, levels = c("CG", "CHG", "CHH"))
 cor_results <- data.table(context = c("CG", "CHG", "CHH"), r = NA_real_, p = NA_real_)
 for (i in 1:nrow(cor_results)) {
   x <- plot_dt[plot_dt$context == cor_results$context[i], ]
-  test <- cor.test(x$log2_TPM, x$methylation_pct, method = "pearson")
+  test <- cor.test(x$TPM, x$methylation_pct, method = "pearson")
   cor_results$r[i] <- unname(test$estimate)
   cor_results$p[i] <- test$p.value
 }
@@ -498,10 +562,52 @@ ggplot(plot_dt, aes(x = log2_TPM, y = methylation_pct, colour = context)) +
   geom_smooth(method = "lm", se = TRUE, linewidth = 0.8) +
   geom_text(data = cor_results, aes(x = 13, y = c(8,13,18), label = label, colour = context), inherit.aes = FALSE, hjust = 1, vjust = 1, size = 3) +
   scale_colour_manual(values = c(CG = "#D55E00",CHG = "#56B4E9",CHH = "#999999")) +
-  labs(x = "log2(mean TPM + 1)", y = "Mean Methylation (%)", colour = NULL) +
+  labs(x = "log2(TPM)", y = "Mean Methylation (%)", colour = NULL) +
   theme_bw(base_size = 12) +
   theme(legend.position = "none") +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"), axis.title = element_text(face = "bold"))
+dev.off()
+
+meth_long <- read.table(file="promoter_meth_pct.txt",header=T)
+
+homologies <- read.csv(file="homologies.csv")
+homologies <- homologies[1:4]
+homologies <- as.data.table(homologies)
+hom_long <- melt(homologies, id.vars = "group_id", measure.vars = c("A","B","D"), variable.name = "homoeolog", value.name = "gene_id")
+meth_long <- meth_long[meth_long$gene_id %in% hom_long$gene_id,]
+meth_long <- left_join(meth_long,hom_long,by="gene_id")
+colnames(meth_long)[2] <- "genotype"
+
+bias_categories <- read.csv(file="bias_category_all_samples_inc_orig_expr.csv")
+bias_categories$sample <- gsub("_.*","",bias_categories$sample)
+bias_categories <- bias_categories[!bias_categories$sample %in% "PxCS3",]
+bias_categories$sample <- gsub("PXCS2","PxCS2",bias_categories$sample)
+bias_categories <- bias_categories[!bias_categories$sample %in% c("PxCS1", "PxCS2"),]
+bias_categories <- bias_categories %>%
+  mutate(genotype = sub("[0-9]+$","",as.character(sample))) %>%
+  group_by(group_id,genotype) %>%
+  summarise(A_tpm = mean(A_tpm,na.rm = TRUE),B_tpm = mean(B_tpm,na.rm = TRUE),D_tpm = mean(D_tpm,na.rm = TRUE),.groups = "drop") %>%
+  mutate(triad_tpm = A_tpm + B_tpm + D_tpm,A = A_tpm / triad_tpm,B = B_tpm / triad_tpm,D = D_tpm / triad_tpm)
+bias_categories$CV <- apply(bias_categories[7:9],1,sd)/apply(bias_categories[7:9],1,mean)
+bias_categories$group_id <- as.numeric(gsub("X","",bias_categories$group_id))
+bias_categories_part <- bias_categories[c(1,2,6,10)]
+
+joined_df <- full_join(bias_categories_part,meth_long,by = c("group_id","genotype"))
+joined_df <- joined_df[complete.cases(joined_df),]
+
+cor_df <- joined_df %>%
+  group_by(context) %>%
+  summarise(r = cor(methylation_pct,CV,use = "complete.obs",method = "pearson"),p = cor.test(methylation_pct,CV,method = "pearson")$p.value,.groups = "drop") %>%
+  mutate(label = paste0(context,": R = ",round(r,2),", ",ifelse(p < 0.001,"P < 0.001",paste0("P = ",signif(p,2)))))
+
+pdf(file="heb_promoter_meth.pdf",height=2.5,width=2.5)
+ggplot(data = joined_df,aes(y = methylation_pct,x = CV,color = context)) +
+  geom_smooth(method = "lm",se = T,linewidth = 1) +
+  geom_text(data = cor_df,aes(y = c(10,15,20),x = 1,label = label,color = context),hjust = 1.05,vjust = 1.2,size = 2,inherit.aes = FALSE,show.legend = FALSE) +
+  scale_colour_manual(values = c(CG = "#D55E00",CHG = "#56B4E9",CHH = "#999999")) +
+  labs(y = "Mean Methylation (%)",x = "HEB",color=NULL) +
+  theme_bw(base_size = 12) +
+  theme(axis.title = element_text(face = "bold"),panel.grid.minor = element_blank(),legend.position = "none")
 dev.off()
 
 ## compare methylation distance from parents
