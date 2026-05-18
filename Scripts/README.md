@@ -589,10 +589,15 @@ awk '($4=="C"&&$5=="T")||($4=="T"&&$5=="C"){chr=$1;sub(/^triticum_aestivum\./,"c
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CHG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CHG_symmetric_all.txt.gz
 awk 'BEGIN{OFS="\t"} {print $1, $2+1}' ct_snps.bed > ct_snps.pos.txt
 awk 'BEGIN{FS=OFS="\t"} NR==FNR{a[$1 FS $2]; next} FNR==1 || !(($1 FS $2) in a)' ct_snps.pos.txt <(zcat merged_CHH_fullchr.txt.gz) | gzip > merged_CHH_all.txt.gz
+awk -v W=50000 '{s=int($2/W)*W; c[$1,s,s+W]++} END{for(i in c){split(i,a,SUBSEP); print a[1],a[2],a[3],c[i]}}' OFS="\t" cs_par_snps.txt | sort -k1,1 -k2,2n > cs_par_snps_50kb_counts.tsv
 
 Rscript boman_classification_cg.R
 Rscript boman_classification_chg.R
 Rscript boman_classification_chh.R
+
+Rscript boman_classification_snp_cg.R
+Rscript boman_classification_snp_chg.R
+Rscript boman_classification_snp_chh.R
 
 ```
 
