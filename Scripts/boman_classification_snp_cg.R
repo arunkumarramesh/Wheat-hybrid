@@ -32,6 +32,24 @@ dt$A <- dt$pct_CS / 100
 dt$H <- dt$pct_CSxP / 100
 dt$B <- dt$pct_P / 100
 
+meth_long <- rbind(
+  data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "CS",pct = dt$pct_CS),
+  data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "CSxP",pct = dt$pct_CSxP),
+  data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "P",pct = dt$pct_P)
+)
+
+ci_summary <- function(x,by_cols,value_col) {
+  out <- x[, list(N = sum(!is.na(get(value_col))),mean_value = mean(get(value_col),na.rm = TRUE),sd_value = sd(get(value_col),na.rm = TRUE)), by = by_cols]
+  out$se <- out$sd_value / sqrt(out$N)
+  out$ci <- qt(0.975,df = out$N - 1) * out$se
+  out$ci_low <- out$mean_value - out$ci
+  out$ci_high <- out$mean_value + out$ci
+  return(out)
+}
+
+meth_summary <- ci_summary(meth_long,c("subgenome","SNP_density_group","sample"),"pct")
+setnames(meth_summary,"mean_value","mean_pct")
+
 dt$x <- dt$H - dt$A
 dt$y <- dt$H - dt$B
 dt$radius <- sqrt(dt$x^2 + dt$y^2)
@@ -64,6 +82,8 @@ sector_to_class <- function(sector_center) {
 }
 
 dt$sector_center <- vapply(dt$angle_deg,nearest_sector_center,numeric(1))
+dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
+dt <- dt[max_mC >= 0.01]
 
 dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center,sector_to_class,character(1)))
 dt$category <- factor(dt$category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant"))
@@ -79,24 +99,6 @@ summary_dt_all <- dt[, .N, by = .(SNP_density_group,category)]
 summary_dt_all[, proportion := N / sum(N), by = SNP_density_group]
 summary_dt_all$SNP_density_group <- factor(summary_dt_all$SNP_density_group,levels = c("Low SNP density","High SNP density"))
 summary_dt_all$category <- factor(summary_dt_all$category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant"))
-
-meth_long <- rbind(
-  data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "CS",pct = dt$pct_CS),
-  data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "CSxP",pct = dt$pct_CSxP),
-  data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "P",pct = dt$pct_P)
-)
-
-ci_summary <- function(x,by_cols,value_col) {
-  out <- x[, list(N = sum(!is.na(get(value_col))),mean_value = mean(get(value_col),na.rm = TRUE),sd_value = sd(get(value_col),na.rm = TRUE)), by = by_cols]
-  out$se <- out$sd_value / sqrt(out$N)
-  out$ci <- qt(0.975,df = out$N - 1) * out$se
-  out$ci_low <- out$mean_value - out$ci
-  out$ci_high <- out$mean_value + out$ci
-  return(out)
-}
-
-meth_summary <- ci_summary(meth_long,c("subgenome","SNP_density_group","sample"),"pct")
-setnames(meth_summary,"mean_value","mean_pct")
 
 write.table(meth_summary,file = paste0("met_classify_snp_density",out_suffix,".tsv"),sep = "\t",quote = FALSE,row.names = FALSE)
 write.table(summary_dt,file = paste0("percent_met_snp_density",out_suffix,".tsv"),sep = "\t",quote = FALSE,row.names = FALSE)
