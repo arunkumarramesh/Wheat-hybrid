@@ -583,6 +583,18 @@ awk '($4=="C"&&$5=="T")||($4=="T"&&$5=="C"){chr=$1;sub(/^triticum_aestivum\./,"c
 
 ```
 
+29. Obtain v1 genome coordinates for gene rich (states 1-4) and TE rich, H3K9me2	Intergenic region (state 13) from Li et al 2019 https://doi.org/10.1186/s13059-019-1746-8
+```
+wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state1.txt
+wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state2.txt
+wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state3.txt
+wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state4.txt
+wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state13.txt
+cat state1.txt state2.txt state3.txt state4.txt | sed  -e '/region/d' -e '/chrom/d' | cut -f 6-8 | sed 's/$/\t1-4/' > state1-4.txt 
+sed  -e '/region/d' -e '/chrom/d' state13.txt | cut -f 6-8 | sed 's/$/\t13/' > state13_2.txt
+cat state1-4.txt  state13_2.txt >chromatin_states.txt
+```
+
 29. Remove methylation sites with C/T differences between CS and Paragon reference genomes. The classify sites based on inheritance categories.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CG_symmetric_all.txt.gz
@@ -595,10 +607,15 @@ Rscript boman_classification_cg.R
 Rscript boman_classification_chg.R
 Rscript boman_classification_chh.R
 
+## reclassify for those with high and low SNV density
 Rscript boman_classification_snp_cg.R
 Rscript boman_classification_snp_chg.R
 Rscript boman_classification_snp_chh.R
 
+## reclassify for those in different gene rich and TE rich chromatin intervals
+boman_classification_chromatin_cg.R
+boman_classification_chromatin_chg.R
+boman_classification_chromatin_chh.R
 ```
 
 30. Convert IWGSC v1.1 gene annotation into BED files for CDS for the longest transcript and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs using bed_intervals.sh
