@@ -924,8 +924,9 @@ hebbias_cv_plot_a <- ggplot(data=bias_categories[bias_categories$group_id %in% b
             aes(sample, y = 0.7, label = groups),hjust = -0.3) +
   geom_text(data = bias_categories[bias_categories$group_id %in% buckets[[1]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
             aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
-  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  # headroom for labels
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  
   coord_cartesian(clip = "off") +
+  ylab("HEB") +
   scale_fill_manual(values = c(CS = "#0072B2", CSxP = "#E69F00", P = "#CC79A7"), name = "Genotype")
 
 hebbias_cv_plot_b <- ggplot(data=bias_categories[bias_categories$group_id %in% buckets[[2]]$group_id,], aes(x = sample, y = CV, fill = genotype)) +
@@ -934,8 +935,9 @@ hebbias_cv_plot_b <- ggplot(data=bias_categories[bias_categories$group_id %in% b
             aes(sample, y = 1, label = groups),hjust = -0.3) +
   geom_text(data = bias_categories[bias_categories$group_id %in% buckets[[2]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
             aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
-  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  # headroom for labels
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) + 
   coord_cartesian(clip = "off") +
+  ylab("HEB") +
   scale_fill_manual(values = c(CS = "#0072B2", CSxP = "#E69F00", P = "#CC79A7"), name = "Genotype")
 
 hebbias_cv_plot_c <- ggplot(data=bias_categories[bias_categories$group_id %in% buckets[[3]]$group_id,], aes(x = sample, y = CV, fill = genotype)) +
@@ -944,8 +946,9 @@ hebbias_cv_plot_c <- ggplot(data=bias_categories[bias_categories$group_id %in% b
             aes(sample, y = 1.2, label = groups),hjust = -0.3) +
   geom_text(data = bias_categories[bias_categories$group_id %in% buckets[[3]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
             aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
-  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  # headroom for labels
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  
   coord_cartesian(clip = "off") +
+  ylab("HEB") +
   scale_fill_manual(values = c(CS = "#0072B2", CSxP = "#E69F00", P = "#CC79A7"), name = "Genotype")
 
 hebbias_cv_plot_d <- ggplot(data=bias_categories[bias_categories$group_id %in% buckets[[4]]$group_id,], aes(x = sample, y = CV, fill = genotype)) +
@@ -954,8 +957,9 @@ hebbias_cv_plot_d <- ggplot(data=bias_categories[bias_categories$group_id %in% b
             aes(sample, y = 0.8, label = groups),hjust = -0.3) +
   geom_text(data = bias_categories[bias_categories$group_id %in% buckets[[4]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
             aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
-  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  # headroom for labels
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  
   coord_cartesian(clip = "off") +
+  ylab("HEB") +
   xlab("") +
   scale_fill_manual(values = c(CS = "#0072B2", CSxP = "#E69F00", P = "#CC79A7"), name = "Genotype")
 
@@ -965,7 +969,8 @@ hebbias_cv_plot_e <- ggplot(data=bias_categories[bias_categories$group_id %in% b
             aes(sample, y = 0.8, label = groups),hjust = -0.3) +
   geom_text(data = bias_categories[bias_categories$group_id %in% buckets2[[2]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
             aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
-  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  # headroom for labels
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  
+  ylab("HEB") +
   coord_cartesian(clip = "off") +
   scale_fill_manual(values = c(CS = "#0072B2", CSxP = "#E69F00", P = "#CC79A7"), name = "Genotype")
 
@@ -975,7 +980,8 @@ hebbias_cv_plot_f <- ggplot(data=bias_categories[bias_categories$group_id %in% b
             aes(sample, y = 0.8, label = groups),hjust = -0.3) +
   geom_text(data = bias_categories[bias_categories$group_id %in% buckets2[[3]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
             aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
-  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  # headroom for labels
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +
+  ylab("HEB") +
   coord_cartesian(clip = "off") +
   scale_fill_manual(values = c(CS = "#0072B2", CSxP = "#E69F00", P = "#CC79A7"), name = "Genotype")
 
@@ -985,9 +991,10 @@ hebbias_cv_plot_g <- ggplot(data=bias_categories[bias_categories$group_id %in% b
             aes(sample, y = 0.8, label = groups),hjust = -0.3) +
   geom_text(data = bias_categories[bias_categories$group_id %in% buckets2[[4]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
             aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
-  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  # headroom for labels
+  scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +
   coord_cartesian(clip = "off") +
   xlab("") +
+  ylab("HEB") +
   scale_fill_manual(values = c(CS = "#0072B2", CSxP = "#E69F00", P = "#CC79A7"), name = "Genotype")
 
 pdf(file="hebbias_cv_CS_PvCSxP.pdf",height=14,width=7)
@@ -1073,8 +1080,12 @@ pdf(file="hebbias_avecpm_CS_PvCSxP.pdf",height=14,width=7)
 plot_grid(hebbias_avecpm_plot_a,hebbias_avecpm_plot_b,hebbias_avecpm_plot_c,hebbias_avecpm_plot_d,hebbias_avecpm_plot_e,hebbias_avecpm_plot_f,hebbias_avecpm_plot_g,ncol=1,labels="AUTO")
 dev.off()
 
-pdf(file="ABD_CS_PvCSxP.pdf",height=5,width=13)
-plot_grid(hebbias_avecpm_plot_d,hebbias_cv_plot_d,hebbias_avecpm_plot_g,hebbias_cv_plot_g,ncol=2, labels="AUTO")
+pdf(file="ABD_CS_PvCSxP.pdf",height=7.5,width=7)
+plot_grid(hebbias_avecpm_plot_d,hebbias_avecpm_plot_g,hebbias_cv_plot_g,ncol=1, labels="AUTO")
+dev.off()
+
+pdf(file="ABD_HEB.pdf",height=2.5,width=7)
+hebbias_cv_plot_d
 dev.off()
 
 ## cannot do similar anayses with ASE genes as too few are in triads

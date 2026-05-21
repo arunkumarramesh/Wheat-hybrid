@@ -1,3 +1,6 @@
+library(data.table)
+library(ggplot2)
+library(scales)
 
 snp_counts <- read.table(file="cs_par_snps_50kb_counts.tsv")
 colnames(snp_counts) <- c("chr","start","end","SNP_count")
@@ -13,7 +16,6 @@ ggplot(snp_counts,aes(x = SNP_count)) +
   theme_bw(base_size = 12) +
   theme(axis.title = element_text(face = "bold"),panel.grid.minor = element_blank())
 dev.off()
-
 
 process_methylation_file_snp <- function(infile,snp_count_file,out_suffix,context,region,remove_third_col = FALSE) {
   dt <- fread(infile)
@@ -48,12 +50,25 @@ process_methylation_file_snp <- function(infile,snp_count_file,out_suffix,contex
   dt$H <- dt$pct_CSxP / 100
   dt$B <- dt$pct_P / 100
   
+  meth_long <- rbind(
+    data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "CS",pct = dt$pct_CS),
+    data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "CSxP",pct = dt$pct_CSxP),
+    data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "P",pct = dt$pct_P)
+  )
+  
+  meth_summary <- ci_summary(meth_long,c("subgenome","SNP_density_group","sample"),"pct")
+  setnames(meth_summary,"mean_value","mean_pct")
+  meth_summary$context <- context
+  meth_summary$region <- region
+  
   dt$x <- dt$H - dt$A
   dt$y <- dt$H - dt$B
   dt$radius <- sqrt(dt$x^2 + dt$y^2)
   dt$angle_deg <- (atan2(dt$y,dt$x) * 180 / pi) %% 360
   
   dt$sector_center <- vapply(dt$angle_deg,nearest_sector_center,numeric(1))
+  dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
+  dt <- dt[max_mC >= 0.01]
   
   dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center,sector_to_class,character(1)))
   dt$category <- factor(dt$category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant"))
@@ -74,17 +89,6 @@ process_methylation_file_snp <- function(infile,snp_count_file,out_suffix,contex
   panel_counts_all$SNP_density_group <- factor(panel_counts_all$SNP_density_group,levels = c("Low SNV density","High SNV density"))
   panel_counts_all <- panel_counts_all[order(panel_counts_all$SNP_density_group),]
   count_map_all <- setNames(paste0(panel_counts_all$SNP_density_group," (n=",panel_counts_all$N,")"),as.character(panel_counts_all$SNP_density_group))
-  
-  meth_long <- rbind(
-    data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "CS",pct = dt$pct_CS),
-    data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "CSxP",pct = dt$pct_CSxP),
-    data.table(subgenome = dt$subgenome,SNP_density_group = dt$SNP_density_group,sample = "P",pct = dt$pct_P)
-  )
-  
-  meth_summary <- ci_summary(meth_long,c("subgenome","SNP_density_group","sample"),"pct")
-  setnames(meth_summary,"mean_value","mean_pct")
-  meth_summary$context <- context
-  meth_summary$region <- region
   
   p1 <- ggplot(summary_dt_all,aes(x = category,y = proportion,fill = category)) +
     geom_col(width = 0.8,linewidth = 0.2) +

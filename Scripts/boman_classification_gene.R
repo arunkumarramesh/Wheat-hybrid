@@ -67,6 +67,18 @@ process_methylation_file <- function(infile, out_suffix, context, region, remove
   dt$H <- dt$pct_CSxP / 100
   dt$B <- dt$pct_P / 100
   
+  meth_long <- rbind(
+    data.table(subgenome = dt$subgenome, sample = "CS", pct = dt$pct_CS),
+    data.table(subgenome = dt$subgenome, sample = "CSxP", pct = dt$pct_CSxP),
+    data.table(subgenome = dt$subgenome, sample = "P", pct = dt$pct_P)
+  )
+  
+  meth_summary <- ci_summary(meth_long, c("subgenome", "sample"), "pct")
+  setnames(meth_summary, "mean_value", "mean_pct")
+  
+  meth_summary$context <- context
+  meth_summary$region <- region
+  
   # Coordinates in the Boman plane
   
   dt$x <- dt$H - dt$A
@@ -75,6 +87,8 @@ process_methylation_file <- function(infile, out_suffix, context, region, remove
   dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
   
   dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
+  dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
+  dt <- dt[max_mC >= 0.01] # only keep sites where at last one sample at least 1% methylation
   
   # between 0 to 1
   dt$category <- ifelse(dt$radius < 0.1, "conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
@@ -96,18 +110,6 @@ process_methylation_file <- function(infile, out_suffix, context, region, remove
   panel_counts_all <- panel_counts_all[order(panel_counts_all$subgenome), ]
   
   count_map_all <- setNames(paste0(panel_counts_all$subgenome, " (n=", panel_counts_all$N, ")"),as.character(panel_counts_all$subgenome))
-  
-  meth_long <- rbind(
-    data.table(subgenome = dt$subgenome, sample = "CS", pct = dt$pct_CS),
-    data.table(subgenome = dt$subgenome, sample = "CSxP", pct = dt$pct_CSxP),
-    data.table(subgenome = dt$subgenome, sample = "P", pct = dt$pct_P)
-  )
-  
-  meth_summary <- ci_summary(meth_long, c("subgenome", "sample"), "pct")
-  setnames(meth_summary, "mean_value", "mean_pct")
-  
-  meth_summary$context <- context
-  meth_summary$region <- region
   
   p1 <- ggplot(summary_dt_all,aes(x = category,y = proportion,fill = category)) +
     geom_col(width = 0.8,linewidth = 0.2) +
@@ -135,7 +137,7 @@ process_methylation_file <- function(infile, out_suffix, context, region, remove
   pdf(paste0("met_classify_whole", out_suffix, ".pdf"), width = 3.1, height = 3)
   print(p1)
   dev.off()
-
+  
   return(meth_summary)
 }
 
@@ -149,13 +151,13 @@ all_meth_summary[["chh_promoter"]] <- process_methylation_file(infile = "merged_
 
 meth_summary_all <- rbindlist(all_meth_summary)
 meth_summary_all$context <- factor(meth_summary_all$context, levels = c("CG", "CHG", "CHH"))
-meth_summary_all$region <- factor(meth_summary_all$region, levels = c("Gene", "Promoter"))
+meth_summary_all$region <- factor(meth_summary_all$region, levels = c("CDS", "Promoter"))
 meth_summary_all$subgenome <- factor(meth_summary_all$subgenome, levels = c("A", "B", "D"))
 meth_summary_all$sample <- factor(meth_summary_all$sample, levels = c("CS", "CSxP", "P"))
 
 meth_summary_all$x_group <- paste(meth_summary_all$region, meth_summary_all$subgenome, sep = ".")
 
-x_levels <- c("Gene.A","Gene.B","Gene.D","Promoter.A","Promoter.B","Promoter.D")
+x_levels <- c("CDS.A","CDS.B","CDS.D","Promoter.A","Promoter.B","Promoter.D")
 meth_summary_all$x_group <- factor(meth_summary_all$x_group, levels = x_levels)
 
 p_percent_all <- ggplot(meth_summary_all, aes(x = x_group, y = mean_pct, fill = sample)) +
@@ -163,7 +165,7 @@ p_percent_all <- ggplot(meth_summary_all, aes(x = x_group, y = mean_pct, fill = 
   geom_col(aes(group = sample),position = position_dodge(width = 0.75),width = 0.65,colour = "black",linewidth = 0.25) +
   geom_errorbar(aes(ymin = ci_low, ymax = ci_high, group = sample),position = position_dodge(width = 0.75),width = 0.2,colour = "black",linewidth = 0.4) +
   scale_fill_manual(values = sample_cols) +
-  scale_x_discrete(labels = c("Gene.A" = "A","Gene.B" = "B","Gene.D" = "D","Promoter.A" = "A","Promoter.B" = "B","Promoter.D" = "D")) +
+  scale_x_discrete(labels = c("CDS.A" = "A","CDS.B" = "B","CDS.D" = "D","Promoter.A" = "A","Promoter.B" = "B","Promoter.D" = "D")) +
   facet_wrap(~ context, nrow = 1) +
   labs(x = NULL, y = "Mean Methylation (%)", fill = NULL) +
   theme_bw(base_size = 12) +
@@ -186,7 +188,7 @@ cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#00
 
 summary_dt <- read.table(file="percent_met_cg.tsv",header=T)
 summary_dt$category <- factor(summary_dt$category, levels = names(cat_cols))
-count_map_all <- count_map_all <- aggregate(N ~ subgenome, data = summary_dt, FUN = sum, na.rm = TRUE)
+count_map_all <- aggregate(N ~ subgenome, data = summary_dt, FUN = sum, na.rm = TRUE)
 count_map_all$label <- paste0(count_map_all$subgenome, " (", format(count_map_all$N, big.mark = ","), ")")
 count_map_all <- setNames(count_map_all$label, count_map_all$subgenome)
 
@@ -206,7 +208,7 @@ dev.off()
 
 summary_dt <- read.table(file="percent_met_chg.tsv",header=T)
 summary_dt$category <- factor(summary_dt$category, levels = names(cat_cols))
-count_map_all <- count_map_all <- aggregate(N ~ subgenome, data = summary_dt, FUN = sum, na.rm = TRUE)
+count_map_all <- aggregate(N ~ subgenome, data = summary_dt, FUN = sum, na.rm = TRUE)
 count_map_all$label <- paste0(count_map_all$subgenome, " (", format(count_map_all$N, big.mark = ","), ")")
 count_map_all <- setNames(count_map_all$label, count_map_all$subgenome)
 
@@ -226,7 +228,7 @@ dev.off()
 
 summary_dt <- read.table(file="percent_met_chh.tsv",header=T)
 summary_dt$category <- factor(summary_dt$category, levels = names(cat_cols))
-count_map_all <- count_map_all <- aggregate(N ~ subgenome, data = summary_dt, FUN = sum, na.rm = TRUE)
+count_map_all <- aggregate(N ~ subgenome, data = summary_dt, FUN = sum, na.rm = TRUE)
 count_map_all$label <- paste0(count_map_all$subgenome, " (", format(count_map_all$N, big.mark = ","), ")")
 count_map_all <- setNames(count_map_all$label, count_map_all$subgenome)
 
@@ -300,7 +302,7 @@ ggplot(coverage_summary, aes(x = subgenome, y = mean_cov, fill = sample, group =
   theme(axis.text.x = element_text(angle = 0, hjust = 0.5), legend.position = "right")
 dev.off()
 
-## using CG CDS, plot what the different boman methylation categories mean 
+## using CDS, plot what the different boman methylation categories mean 
 
 library(data.table)
 library(ggplot2)
@@ -355,6 +357,8 @@ sector_to_class <- function(sector_center) {
 }
 
 dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
+dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
+dt <- dt[max_mC >= 0.1]
 dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
 category_levels <- c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")
 dt$category <- factor(dt$category, levels = category_levels)
@@ -816,7 +820,9 @@ run_methylation_classification <- function(infile,context,remove_col3 = FALSE) {
     filter(cov_CS > 10,cov_CSxP > 10,cov_P > 10,site_CS >= 5,site_CSxP >= 5,site_P >= 5) %>%
     mutate(subgenome = sub("^TraesCS[0-9]+([ABD]).*","\\1",gene_id),subgenome = factor(subgenome,levels = c("A","B","D"))) %>%
     filter(subgenome %in% c("A","B","D")) %>%
-    mutate(A = pct_CS / 100,H = pct_CSxP / 100,B = pct_P / 100,x = H - A,y = H - B,radius = sqrt(x^2 + y^2),angle_deg = (atan2(y,x) * 180 / pi) %% 360,sector_center = vapply(angle_deg,nearest_sector_center,numeric(1)),category = ifelse(radius < 0.1,"conserved_mC",vapply(sector_center,sector_to_class,character(1))),category = factor(category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")))
+    mutate(A = pct_CS / 100,H = pct_CSxP / 100,B = pct_P / 100) %>%
+    filter(pmax(A,H,B,na.rm = TRUE) >= 0.01) %>%
+    mutate(x = H - A,y = H - B,radius = sqrt(x^2 + y^2),angle_deg = (atan2(y,x) * 180 / pi) %% 360,sector_center = vapply(angle_deg,nearest_sector_center,numeric(1)),category = ifelse(radius < 0.1,"conserved_mC",vapply(sector_center,sector_to_class,character(1))),category = factor(category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")))
   
   dt <- left_join(dt,Reg_Class,by = "gene_id")
   
@@ -886,4 +892,69 @@ run_methylation_classification("merged_CG_symmetric_promoter1kb.txt.gz","cg",rem
 run_methylation_classification("merged_CHG_symmetric_promoter1kb.txt.gz","chg",remove_col3 = FALSE)
 run_methylation_classification("merged_CHH_promoter1kb.txt.gz","chh",remove_col3 = TRUE)
 
+## methylation inheritance classification by chromatin states
+
+cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#0072B2", P_dominant = "#CC79A7", overdominant = "#E69F00", underdominant = "#1B7837")
+
+summary_dt <- read.table(file="percent_met_chromatin_state_cg.tsv",header=T)
+summary_dt$category <- factor(summary_dt$category, levels = names(cat_cols))
+count_map_all <- aggregate(N ~ chromatin_state, data = summary_dt, FUN = sum, na.rm = TRUE)
+count_map_all$label <- paste0(count_map_all$chromatin_state, " (", format(count_map_all$N, big.mark = ","), ")")
+count_map_all <- setNames(count_map_all$label, count_map_all$chromatin_state)
+
+pdf(paste0("met_classify_chromatin_cg.pdf"), width = 5, height = 3)
+ggplot(summary_dt, aes(x = category, y = proportion, fill = category)) +
+  geom_col(width = 0.8, colour = "black", linewidth = 0.2) +
+  geom_text(aes(label = percent(proportion, accuracy = 0.1)), vjust = -0.35, size = 3.2, fontface = "bold") +
+  scale_fill_manual(values = cat_cols, drop = FALSE) +
+  scale_x_discrete(drop = FALSE) +
+  scale_y_continuous(labels = percent_format(accuracy = 1), expand = expansion(mult = c(0, 0.12))) +
+  facet_wrap(~ chromatin_state, nrow = 1, labeller = labeller(chromatin_state = count_map_all)) +
+  labs(x = NULL, y = "Percentage of sites") +
+  theme_bw(base_size = 12) +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"), strip.background = element_rect(fill = "white", colour = "black"), legend.position = "right", plot.title = element_text(face = "bold"), axis.title = element_text(face = "bold")) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1), legend.position = "none")
+dev.off()
+
+
+summary_dt <- read.table(file="percent_met_chromatin_state_chg.tsv",header=T)
+summary_dt$category <- factor(summary_dt$category, levels = names(cat_cols))
+count_map_all <- aggregate(N ~ chromatin_state, data = summary_dt, FUN = sum, na.rm = TRUE)
+count_map_all$label <- paste0(count_map_all$chromatin_state, " (", format(count_map_all$N, big.mark = ","), ")")
+count_map_all <- setNames(count_map_all$label, count_map_all$chromatin_state)
+
+pdf(paste0("met_classify_chromatin_chg.pdf"), width = 5, height = 3)
+ggplot(summary_dt, aes(x = category, y = proportion, fill = category)) +
+  geom_col(width = 0.8, colour = "black", linewidth = 0.2) +
+  geom_text(aes(label = percent(proportion, accuracy = 0.1)), vjust = -0.35, size = 3.2, fontface = "bold") +
+  scale_fill_manual(values = cat_cols, drop = FALSE) +
+  scale_x_discrete(drop = FALSE) +
+  scale_y_continuous(labels = percent_format(accuracy = 1), expand = expansion(mult = c(0, 0.12))) +
+  facet_wrap(~ chromatin_state, nrow = 1, labeller = labeller(chromatin_state = count_map_all)) +
+  labs(x = NULL, y = "Percentage of sites") +
+  theme_bw(base_size = 12) +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"), strip.background = element_rect(fill = "white", colour = "black"), legend.position = "right", plot.title = element_text(face = "bold"), axis.title = element_text(face = "bold")) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1), legend.position = "none")
+dev.off()
+
+
+summary_dt <- read.table(file="percent_met_chromatin_state_chh.tsv",header=T)
+summary_dt$category <- factor(summary_dt$category, levels = names(cat_cols))
+count_map_all <- aggregate(N ~ chromatin_state, data = summary_dt, FUN = sum, na.rm = TRUE)
+count_map_all$label <- paste0(count_map_all$chromatin_state, " (", format(count_map_all$N, big.mark = ","), ")")
+count_map_all <- setNames(count_map_all$label, count_map_all$chromatin_state)
+
+pdf(paste0("met_classify_chromatin_chh.pdf"), width = 5, height = 3)
+ggplot(summary_dt, aes(x = category, y = proportion, fill = category)) +
+  geom_col(width = 0.8, colour = "black", linewidth = 0.2) +
+  geom_text(aes(label = percent(proportion, accuracy = 0.1)), vjust = -0.35, size = 3.2, fontface = "bold") +
+  scale_fill_manual(values = cat_cols, drop = FALSE) +
+  scale_x_discrete(drop = FALSE) +
+  scale_y_continuous(labels = percent_format(accuracy = 1), expand = expansion(mult = c(0, 0.12))) +
+  facet_wrap(~ chromatin_state, nrow = 1, labeller = labeller(chromatin_state = count_map_all)) +
+  labs(x = NULL, y = "Percentage of sites") +
+  theme_bw(base_size = 12) +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"), strip.background = element_rect(fill = "white", colour = "black"), legend.position = "right", plot.title = element_text(face = "bold"), axis.title = element_text(face = "bold")) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1), legend.position = "none")
+dev.off()
 
