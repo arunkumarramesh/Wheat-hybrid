@@ -306,6 +306,8 @@ dev.off()
 
 library(data.table)
 library(ggplot2)
+library(cowplot)
+library(ragg)
 
 dt <- fread("merged_CG_symmetric_CDS.txt.gz")
 
@@ -362,6 +364,41 @@ dt <- dt[max_mC >= 0.1]
 dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
 category_levels <- c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")
 dt$category <- factor(dt$category, levels = category_levels)
+
+
+cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#0072B2", P_dominant = "#CC79A7", overdominant = "#E69F00", underdominant = "#1B7837")
+
+category_counts <- dt %>% 
+  count(category) %>% 
+  mutate(percentage = n / sum(n) * 100) %>% 
+  mutate(label = paste0(category, " (", round(percentage, 2), "%)"))
+
+legend_labels <- setNames(category_counts$label, category_counts$category)
+
+a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_abline(intercept = 0, slope = tan(c(1, 3, 5, 7) * pi / 8), color = "gray70", linetype = "dotted") +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CSxP - P methylation %", y = "Mean CSxP - CS methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) ) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CS - P methylation %", y = "Mean CSxP - MPV methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+ggsave(filename = "boman_class_geometric.png",plot = plot_grid(a_plot, b_plot, ncol=2),width = 10,height = 3,units = "in",dpi = 300,device = ragg::agg_png,bg = "white")
+
+agg_png( filename = "boman_additive.png", width = 4, height = 4, units = "in", res = 300, background = "white" )
+heatscatter(dt[dt$category %in% "additive",]$pct_CS, dt[dt$category %in% "additive",]$pct_P,xlab = "CS Methylation %",ylab = "Paragon Methylation %", main = "")
+dev.off()
 
 ci_summary <- function(x, by_cols, value_col) {
   out <- x[,list(N = sum(!is.na(get(value_col))),mean_value = mean(get(value_col), na.rm = TRUE),sd_value = sd(get(value_col), na.rm = TRUE)),by = by_cols]
