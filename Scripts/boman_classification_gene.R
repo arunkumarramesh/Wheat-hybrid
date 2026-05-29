@@ -442,20 +442,6 @@ pdf(file = "mean_methylation_by_category_cg_cds.pdf", width = 4, height = 4)
 print(p_meth_cat)
 dev.off()
 
-dt_add <- dt[category == "additive"]
-parent_pct_add <- data.table(pct = c(dt_add$pct_CS, dt_add$pct_P))
-
-p_add_hist <- ggplot(parent_pct_add, aes(x = pct)) +
-  geom_histogram(binwidth = 5, colour = "black", fill = "grey70", linewidth = 0.3) +
-  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 100, 20)) +
-  labs(x = "Parental methylation level (%)",y = "Number of sites",title = "Additive category") +
-  theme_bw(base_size = 12) +
-  theme(panel.grid.minor = element_blank(),panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"),plot.title = element_text(face = "bold"),axis.title = element_text(face = "bold"))
-
-pdf(file = "additive_parent_methylation_histogram_cg_cds.pdf", width = 4, height = 4)
-print(p_add_hist)
-dev.off()
-
 ## expression level by cytosine context
 
 library(data.table)
