@@ -1,2 +1,2 @@
 # Wheat-hybrid
-Transcriptomes and Methylomes of Chinese Spring, Paragon and hybrid bread wheat 
+Scripts and Data for analyzing transcriptomes and methylomes of Chinese Spring, Paragon and hybrid bread wheat 
