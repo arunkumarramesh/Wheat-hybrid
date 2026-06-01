@@ -2,7 +2,7 @@
 
 INPUT="$1"
 OUTPUT="$2"
-TE_BED="${3:-TEs.bed}"
+TE_BED="TEs.bed"
 
 (
 printf "chr\tstart\tend\tte_id\tte_strand\tte_class\tte_family\tte_consensus\tte_consensus_pct\tte_status\tte_copie\tte_compo\tte_post\tte_length\tsubgenome\tnearest_gene_id\tdistance_to_gene\tcentromere_status\tcentromere_interval\tn_sites\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"
