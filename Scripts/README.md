@@ -654,7 +654,10 @@ sed -i 's/Chr/chr/' TEs.bed
 
 ./subset_cg_chg_by_tes.sh merged_CG_symmetric_all.txt.gz merged_CG_symmetric_te.txt.gz
 ./subset_cg_chg_by_tes.sh merged_CHG_symmetric_all.txt.gz merged_CHG_symmetric_te.txt.gz
-python3 subset_chh_by_tes.py TEs.bed merged_CHH_all.txt.gz merged_CHH_te.txt.gz
+./subset_chh_by_tes.sh merged_CHH_all.txt.gz merged_CHH_te.txt.gz
+
+# old
+# python3 subset_chh_by_tes.py TEs.bed merged_CHH_all.txt.gz merged_CHH_te.txt.gz
 
 Rscript gene_cg_te.R
 Rscript gene_chg_te.R
