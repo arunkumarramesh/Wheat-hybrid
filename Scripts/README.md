@@ -643,7 +643,10 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CHG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CHG_symmetric_promoter1kb.txt.gz
 
-python3 subset_chh_by_cds.py promoter1kb.bed merged_CHH_all.txt.gz merged_CHH_promoter1kb.txt.gz
+(printf "chr\tpos\tstrand\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CHH_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$12,$16}') | gzip > merged_CHH_promoter1kb.txt.gz
+
+# old
+# python3 subset_chh_by_cds.py promoter1kb.bed merged_CHH_all.txt.gz merged_CHH_promoter1kb.txt.gz
 ```
 33. Subset TE regions from methylation sites. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
