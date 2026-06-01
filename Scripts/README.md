@@ -618,7 +618,7 @@ boman_classification_chromatin_chg.R
 boman_classification_chromatin_chh.R
 ```
 
-30. Convert IWGSC v1.1 gene annotation into BED files for CDS for the longest transcript and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs using bed_intervals.sh
+30. Convert IWGSC v1.1 gene annotation into BED files for CDS for the longest transcript and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs using [`bed_intervals.sh`](./bed_intervals.sh)
 
 31. Subset CDS regions from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
