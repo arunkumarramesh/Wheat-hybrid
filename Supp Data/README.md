@@ -22,6 +22,7 @@
 | [`promoter1kb.bed`](promoter1kb.bed.gz)  | 1Kb Promoter interval |
 | [`cs_par_snps_50kb_counts.tsv`](cs_par_snps_50kb_counts.tsv)  | Number of SNVs per 50kb between IWGSC v1.0 and GCA949126075v1 reference.|
 | [`chromatin_states.txt.zip`](chromatin_states.txt.zip)  | File containing IWGSC v1.0 coordinates for chromatin states 1-4 and 13 defined in Li et al 2019 https://doi.org/10.1186/s13059-019-1746-8 |
+| [`choulet_gene_tissue.tsv`](choulet_gene_tissue.tsv) | Gene IDs and expression breadth classification |
 
 ### Expression quantification files
 
