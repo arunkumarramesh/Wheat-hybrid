@@ -665,3 +665,8 @@ Rscript genen_chh_te.R
 ```
 
 34. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R),[`boman_classification_snp.R`](./boman_classification_snp.R), [`gbM_wheat.R`](./gbM_wheat.R), and [`te_meth.R`](./te_meth.R)
+
+35. Obtain tissue expression data and run [`tissue_specific.R`](./tissue_specific.R) to repeat classifications and associate expression breadth with gbM
+```
+wget -c https://urgi.versailles.inrae.fr/download/iwgsc/IWGSC_RefSeq_Annotations/v1.1/iwgsc_refseqv1.1_rnaseq_mapping_2017July20.zip
+```
