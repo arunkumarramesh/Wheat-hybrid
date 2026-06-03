@@ -13,7 +13,9 @@ condition_cols <- setdiff(names(wide), c("gene", "leaf_Z10_TPM", "leaf_Z10_reps_
 
 calc_tau <- function(x) {
   x <- as.numeric(x)
-  if (all(is.na(x)) || max(x, na.rm=TRUE) == 0) return(NA_real_)
+  if (length(x_non_na) == 0 || max(x_non_na) == 0) {
+    return(NA)
+  }
   x <- x / max(x, na.rm=TRUE)
   sum(1 - x, na.rm=TRUE) / (length(x) - 1)
 }
