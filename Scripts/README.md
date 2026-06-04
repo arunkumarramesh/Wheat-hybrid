@@ -595,7 +595,7 @@ sed  -e '/region/d' -e '/chrom/d' state13.txt | cut -f 6-8 | sed 's/$/\t13/' > s
 cat state1-4.txt  state13_2.txt >chromatin_states.txt
 ```
 
-29. Remove methylation sites with C/T differences between CS and Paragon reference genomes. The classify sites based on inheritance categories.
+29. Remove methylation sites with C/T differences between CS and Paragon reference genomes. The classify sites based on inheritance categories. Classification scheme based on scripts developed by Asena: https://github.com/AsenaArdaman/Hybrid_inheritance_models.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CG_symmetric_all.txt.gz
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CHG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CHG_symmetric_all.txt.gz
