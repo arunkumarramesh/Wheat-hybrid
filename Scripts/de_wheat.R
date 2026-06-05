@@ -129,6 +129,24 @@ colnames(mm) <- levels(edgeR.DGElist$samples$group)
 y <- voom(edgeR.DGElist, mm, plot = F)
 fit <- lmFit(y, mm)
 
+library(ComplexUpset)
+library(ggplot2)
+
+top.table <- topTable(eBayes(contrasts.fit(fit, contrast = c(-0.5, 1, -0.5))), sort.by = "P", n = Inf)
+DGEgenes_CS_PvCSxP <- rownames(top.table[top.table$adj.P.Val < 0.05 & abs(top.table$logFC) > 0.58, ])
+
+top.table <- topTable(eBayes(contrasts.fit(fit, contrast = c(-1, 1, 0))), sort.by = "P", n = Inf)
+DGEgenes_CS_PvCS <- rownames(top.table[top.table$adj.P.Val < 0.05 & abs(top.table$logFC) > 0.58, ])
+
+top.table <- topTable(eBayes(contrasts.fit(fit, contrast = c(0, 1, -1))), sort.by = "P", n = Inf)
+DGEgenes_CS_PvP <- rownames(top.table[top.table$adj.P.Val < 0.05 & abs(top.table$logFC) > 0.58, ])
+
+upset_df <- data.frame(gene = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))), `Hybrid v. Midparent` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvCSxP)), `Hybrid v. CS` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvCS)), `Hybrid v. Paragon` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvP)), check.names = FALSE)
+
+pdf("Hybrid_vParent_diff.pdf",height=3,width=5.3)
+upset(upset_df, c("Hybrid v. Midparent", "Hybrid v. CS", "Hybrid v. Paragon"), set_sizes = FALSE, name = "DE Comparison", base_annotations = list("Intersection size" = intersection_size(counts = TRUE, text_mapping = aes(label = !!upset_text_percentage(digits = 1)))  + labs(y = "Number of genes", title = NULL)))
+dev.off()
+
 cpm_log <- cpm(edgeR.DGElist, log = TRUE)
 cpm_nolog <- cpm(edgeR.DGElist, log = FALSE)
 colnames(cpm_log) <- sub("_.*","",colnames(cpm_log))
