@@ -439,7 +439,7 @@ for file in *.ase.par.bam ; do java -jar /software/picard.jar BuildBamIndex -I $
 /software/gatk-4.3.0.0/gatk ASEReadCounter -R Paragon_part.fa -I P3_RNA_MKRN250026356-1A_22VTNMLT4_L4.ase.par.bam -V par_ase_snps_het.recode.vcf.gz -O P3.par.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
 
 ```
-15. Run differential expression tests using [`de_wheat.R`](./de_wheat.R)
+15. Run differential expression tests using [`de_wheat.R`](./de_wheat.R). Based on preliminary analyses done by Cris https://github.com/crisforgiarini/Data-Gene-expression-and-methylation-in-intraspecific-hybrids-of-hexaploidy-wheat 
 
 16. Compare homoeolog expression bias for differentially expressed genes using [`assign_homoeolog_expression_bias_categories.R`](./assign_homoeolog_expression_bias_categories.R)
 
