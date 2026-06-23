@@ -66,227 +66,29 @@ cat SingleCopyOrthologues_matrix_A.tsv SingleCopyOrthologues_matrix_B.tsv Single
 ```
 5. Summarise counts per gene using [`combine_sample_tpm.R`](./combine_sample_tpm.R). Script from Philippa Borrill. 
 
-6. Obtain genome references
-```
-wget https://urgi.versailles.inra.fr/download/iwgsc/IWGSC_RefSeq_Assemblies/v2.1/iwgsc_refseqv2.1_assembly.fa.zip
-unzip iwgsc_refseqv2.1_assembly.fa.zip
-```
-7. Split genome references in half
-```
-TH=450000000
+6. Run differential expression tests using [`de_wheat.R`](./de_wheat.R). Based on preliminary analyses done by Cris https://github.com/crisforgiarini/Data-Gene-expression-and-methylation-in-intraspecific-hybrids-of-hexaploidy-wheat
 
-cut -f1,2 iwgsc_refseqv2.1_assembly.fa.fai | while read CTG LEN; do
-  if [ "$LEN" -gt "$TH" ]; then
-    MID=$(( LEN/2 ))
-    samtools faidx iwgsc_refseqv2.1_assembly.fa ${CTG}:1-${MID}   > ${CTG}_part1.fa
-    samtools faidx iwgsc_refseqv2.1_assembly.fa ${CTG}:$((MID+1))-${LEN}  > ${CTG}_part2.fa
-    sed -i "1s/>.*/>${CTG}_part1/" ${CTG}_part1.fa
-    sed -i "1s/>.*/>${CTG}_part2/" ${CTG}_part2.fa
-  fi
-done
-
-samtools faidx iwgsc_refseqv2.1_assembly.fa  $(awk '$1 ~ /^ChrUnknown/ { print $1 }' iwgsc_refseqv2.1_assembly.fa.fai)  > scaffolds_only.fa
-cat Chr*fa scaffolds_only.fa > iwgsc_refseqv2.1_part.fa
-samtools faidx iwgsc_refseqv2.1_part.fa
-
+7. Identify genes showing allele-specific expression using combined transcriptome reference
+```
+python3 longest_transcript_ref.py iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna.fasta  iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_longest.fasta
+python3 longest_transcript_ref.py Triticum_aestivum_paragon.GCA949126075v1.cdna.all.fa Triticum_aestivum_paragon.GCA949126075v1.cdna.longest.fa
+cat iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_longest.fasta Triticum_aestivum_paragon.GCA949126075v1.cdna.longest.fa >iwgsc2.1_paragon.fasta
+samtools faidx iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_longest.fasta
+samtools faidx Triticum_aestivum_paragon.GCA949126075v1.cdna.longest.fa
+hisat2-build -p 20 iwgsc2.1_paragon.fasta iwgsc2.1_paragon
+for file in *_1.paired.fq.gz; do hisat2  -p 20  --no-spliced-alignment --no-softclip --score-min L,0,0  --no-mixed  --no-discordant -k 100 --secondary -x iwgsc2.1_paragon -1 $file -2 ${file/_1.paired.fq.gz/_2.paired.fq.gz} -S ${file/_1.paired.fq.gz/.cs.sam} ; done
+for file in *.cs.sam; do samtools sort -n -@ 10 -O bam -o ${file/.cs.sam/.sortname.cs.bam} $file; done
+for file in *.sortname.cs.bam; do samtools view $file| python3 count_unique_reads.py > ${file/sortname.cs.bam/tsv} ; done
 ```
 
-8. Map reads to genome reference
-```
+8. Compare homoeolog expression bias for differentially expressed genes using [`assign_homoeolog_expression_bias_categories.R`](./assign_homoeolog_expression_bias_categories.R)
 
-/software/hisat2-2.2.1/hisat2-build -p 20  iwgsc_refseqv2.1_part.fa iwgsc_refseqv2.1_part
-
-java -jar /software/picard.jar CreateSequenceDictionary -R  iwgsc_refseqv2.1_part.fa -O iwgsc_refseqv2.1_part.dict
-
-for file in *_1.paired.fq.gz; do /software/hisat2-2.2.1/hisat2  -p 20 -x iwgsc_refseqv2.1_part -1 $file -2 ${file/_1.paired.fq.gz/_2.paired.fq.gz} -S ${file/_1.paired.fq.gz/.cs.sam} ; done
-
-for file in *.cs.sam; do samtools sort -n -@ 4 -O bam -o ${file/.cs.sam/.sortname.cs.bam} $file; done
-for file in *.sortname.cs.bam; do samtools fixmate -m $file ${file/.sortname.cs.bam/.fixmate.cs.bam}; done
-for file in *.fixmate.cs.bam; do samtools sort -@ 4 -O bam -o ${file/.fixmate.cs.bam/.sort.cs.bam} $file; done
-for file in *.sort.cs.bam ; do java -jar /software/picard.jar  AddOrReplaceReadGroups -I $file -O ${file/.sort.cs.bam/.readgroup.cs.bam} -LB species -PL illumina -PU 1 -SM $file; done
-for file in *.readgroup.cs.bam ; do java -jar /software/picard.jar  MarkDuplicates -I $file -O ${file/.readgroup.cs.bam/_marked.cs.bam} -M ${file/.readgroup.cs.bam/_metrics.cs.txt}; done
-for file in *_marked.cs.bam ; do java -jar /software/picard.jar BuildBamIndex -I $file; done
-for file in *_marked.cs.bam ; do /software/gatk-4.3.0.0/gatk SplitNCigarReads -R iwgsc_refseqv2.1_part.fa -OBI F -I $file -O  ${file/_marked.cs.bam/_split.cs.bam}  ; done
-for file in *_split.cs.bam ; do java -jar /software/picard.jar BuildBamIndex -I $file; done
-# interval list is  the chr names
-for file in *_split.cs.bam ; do /software/gatk-4.3.0.0/gatk HaplotypeCaller -R iwgsc_refseqv2.1_part.fa -I $file -O ${file/_split.cs.bam/.g.vcf.gz} -ERC GVCF -L interval.list ; done
-
-ls *.g.vcf.gz | tail -n +3 >samples
-/software/gatk-4.3.0.0/gatk --java-options "-Xmx45g -Xms1g" GenomicsDBImport -V CS1_RNA_MKRN250026357-1A_22VTNMLT4_L3.g.vcf.gz -V CS2_RNA_MKRN250026358-1A_22VTNMLT4_L4.g.vcf.gz --genomicsdb-workspace-path genomicsdb --tmp-dir /projects/wheat/tmp -L interval.list
-cat samples | while read line; do /software/gatk-4.3.0.0/gatk --java-options "-Xmx80g" GenomicsDBImport --genomicsdb-update-workspace-path genomicsdb --tmp-dir /projects/wheat/tmp -V $line; done
-
-/software/gatk-4.3.0.0/gatk  --java-options "-Xmx45g" GenotypeGVCFs -R iwgsc_refseqv2.1_part.fa -V gendb://genomicsdb -G StandardAnnotation -O wheat.ase.output.vcf.gz -L interval.list
-/software/gatk-4.3.0.0/gatk SelectVariants -V  wheat.ase.output.vcf.gz -select-type SNP -O  wheat.ase.snps.vcf.gz
-
-```
-
-9. Also split annotation files by part
-```
-awk '$3 == "exon" {print $1, $4, $5}'  iwgsc_refseqv2.1_annotation_200916_HC.gff3 > iwgsc_refseqv2.1_annotation_200916_HC_exon.bed
-
-awk '$3 == "gene"' iwgsc_refseqv2.1_annotation_200916_HC.gff3 | cut -f 1,3-5,9 | sed -e 's/;.*//' -e 's/ID=//' > gene.gff3
-cut -f 1-2 iwgsc_refseqv2.1_part.fa.fai > iwgsc_refseqv2.1_part_chr_sizes.txt
-sed -i '/ChrUnknown/d' iwgsc_refseqv2.1_part_chr_sizes.txt
-python3 split_bed.py
-grep 'ChrUnknown' iwgsc_refseqv2.1_annotation_200916_HC_exon.bed | sed 's/ /\t/g'| cat iwgsc_refseqv2.1_annotation_200916_HC_exon_part.bed - > iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed
-gffread iwgsc_refseqv2.1_annotation_200916_HC.gff3 -T -o iwgsc_refseqv2.1_annotation_200916_HC.gtf 
-python3 split_gff.py
-grep '^ChrUnknown' iwgsc_refseqv2.1_annotation_200916_HC.gtf | cat iwgsc_refseqv2.1_annotation_200916_HC_part.gtf - >iwgsc_refseqv2.1_annotation_200916_HC_unknown_part.gtf
-awk '$3 == "transcript"' iwgsc_refseqv2.1_annotation_200916_HC_unknown_part.gtf > transcripts_part.gtf
-cut -f 3 SingleCopyOrthologues_matrix.tsv | tail -n +2 | sed 's/\..*//'  | grep -F -f - transcripts_part.gtf | cut -f 1,4,5  | sort -u >one_one_orthologs.bed
-
-awk -F'\t' 'BEGIN{OFS="\t"} /^#/ || $3=="gene" {print}' iwgsc_refseqv2.1_annotation_200916_HC.gff3 > genes_refseqv2_HC.gff3
-```
-
-split_bed.py
-```
-chrom_sizes = {}
-with open("iwgsc_refseqv2.1_part_chr_sizes.txt") as f:
-    for line in f:
-        chrom, size = line.strip().split("\t")
-        base_chrom = chrom.replace("_part1", "").replace("_part2", "")
-        chrom_sizes.setdefault(base_chrom, [0, 0])
-        if "part1" in chrom:
-            chrom_sizes[base_chrom][0] = int(size)
-        else:
-            chrom_sizes[base_chrom][1] = int(size)
-
-with open("iwgsc_refseqv2.1_annotation_200916_HC_exon.bed") as f, open("iwgsc_refseqv2.1_annotation_200916_HC_exon_part.bed", "w") as out:
-    for line in f:
-        chrom, start, end = line.strip().split()
-        start = int(start)
-        end = int(end)
-        part1_size = chrom_sizes[chrom][0]
-
-        if start < part1_size:
-            out.write(f"{chrom}_part1\t{start}\t{end}\n")
-        else:
-            out.write(f"{chrom}_part2\t{start - part1_size}\t{end - part1_size}\n")
-
-```
-
-split_gff.py
-```
-sizes_file = "../iwgsc_refseqv2.1_part_chr_sizes.txt"
-in_gtf = "iwgsc_refseqv2.1_annotation_200916_HC.gtf"
-out_gtf = "iwgsc_refseqv2.1_annotation_200916_HC_part.gtf"
-
-chrom_sizes = {}
-with open(sizes_file) as f:
-    for line in f:
-        chrom, size = line.strip().split("\t")[:2]
-        base = chrom.replace("_part1", "").replace("_part2", "")
-        chrom_sizes.setdefault(base, [None, None])
-        if chrom.endswith("_part1"):
-            chrom_sizes[base][0] = int(size)
-        elif chrom.endswith("_part2"):
-            chrom_sizes[base][1] = int(size)
-
-def with_split_attr(attr_str, tag):
-    s = attr_str.rstrip()
-    if not s.endswith(";"):
-        s += ";"
-    return s + f' split "{tag}";'
-
-with open(in_gtf) as fin, open(out_gtf, "w") as fout:
-    for line in fin:
-        if line.startswith("#") or not line.strip():
-            fout.write(line)
-            continue
-        cols = line.rstrip("\n").split("\t")
-        chrom = cols[0]
-        start = int(cols[3])
-        end = int(cols[4])
-        part1_size = chrom_sizes[chrom][0]
-
-        if end <= part1_size:
-            cols[0] = f"{chrom}_part1"
-            fout.write("\t".join(cols) + "\n")
-        elif start > part1_size:
-            cols[0] = f"{chrom}_part2"
-            cols[3] = str(start - part1_size)
-            cols[4] = str(end - part1_size)
-            fout.write("\t".join(cols) + "\n")
-        else:
-            left = cols.copy()
-            left[0] = f"{chrom}_part1"
-            left[4] = str(part1_size)
-            left[8] = with_split_attr(left[8], "left")
-            fout.write("\t".join(left) + "\n")
-
-            right = cols.copy()
-            right[0] = f"{chrom}_part2"
-            right[3] = "1"
-            right[4] = str(end - part1_size)
-            right[8] = with_split_attr(right[8], "right")
-            fout.write("\t".join(right) + "\n")
-
-```
-
-10. Identify sites for ASE analyses
-```
-/software/bcftools-1.16/bcftools view  -R iwgsc_refseqv2.1_annotation_200916_HC_exon_unknown_part.bed -i 'QUAL>=20 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=20 && FMT/GQ>=20)>0' -Oz -o wheat_ase_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
-/software/bcftools-1.16/bcftools view  -i 'QUAL>=10 && N_ALT>=1 && COUNT(GT!="mis" && FMT/DP>=10 )>0' -Oz -o wheat_het_snps_filtered.vcf.gz wheat.ase.snps.vcf.gz
-/software/htslib-1.16/tabix -p vcf wheat_het_snps_filtered.vcf.gz
-gunzip wheat_het_snps_filtered.vcf.gz
-
-```
-
-11. Include a merged file with PxCS3 to show no discrepency when genotype calls are included. only at gene expression level
-```
-/software/gatk-4.3.0.0/gatk GenotypeGVCFs  -R iwgsc_refseqv2.1_part.fa  -V PxCS3_RNA_MKRN250026362-1A_22VTNMLT4_L3.g.vcf.gz  -L wheat_ase_het_snps_filtered.vcf.gz  --include-non-variant-sites true  -O PxCS3_on_wheat_sites.vcf.gz
-/software/bcftools-1.16/bcftools merge -m all -Oz -o wheat_sites_merged_cs.vcf.gz wheat_ase_het_snps_filtered.vcf.gz PxCS3_on_wheat_sites.vcf.gz
-gunzip wheat_sites_merged_cs.vcf.gz
-```
-12. Only keep sites that are not heterozygous in parents and are biallelic. Also perform PCA on SNPs. Run [`snp_hetsites.R`](./snp_hetsites.R)
-
-13. Map reads using WASP for ASE
-```
-/software/vcftools-vcftools-581c231/bin/vcftools --vcf wheat_ase_het_snps_filtered.vcf --positions filtered_set_CS.txt --recode --recode-INFO-all --out wheat_ase_snps_het
-/software/htslib-1.16/bgzip wheat_ase_snps_het.recode.vcf
-/software/htslib-1.16/tabix wheat_ase_snps_het.recode.vcf.gz
-
-/software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --runMode genomeGenerate  --genomeDir star_index --genomeFastaFiles iwgsc_refseqv2.1_part.fa  --sjdbGTFfile iwgsc_refseqv2.1_annotation_200916_HC_unknown_part.gtf --sjdbOverhang 100 --limitGenomeGenerateRAM 48889586954
-
-for file in *_1.paired.fq.gz; do /software/STAR-2.7.10b/bin/Linux_x86_64_static/STAR --runThreadN 16 --genomeDir star_index --readFilesIn $file ${file/_1.paired.fq.gz/_2.paired.fq.gz} --readFilesCommand zcat  --varVCFfile wheat_het_snps_filtered.vcf  --waspOutputMode SAMtag  --outSAMtype BAM SortedByCoordinate  --outFilterMultimapNmax 1  --outSAMattrRGline ID:$file SM:$file PL:ILLUMINA LB:lib1 PU:unit1 --outSAMattributes NH HI AS nM NM MD jM jI rB MC vA vG vW  --outFileNamePrefix ${file/_1.paired.fq.gz/} ; done
-for file in *Aligned.sortedByCoord.out.bam; do samtools view -@ 10 -h $file | awk 'BEGIN{OFS="\t"} /^@/{print;next} {vw=""; for(i=12;i<=NF;i++) if($i~/^vW:i:/){split($i,a,":"); vw=a[3]; break} if(vw=="" || vw==1) print}' | samtools sort -@ 8 -o ${file/Aligned.sortedByCoord.out.bam/.wasp.bam} ; done
-for file in *.wasp.bam ; do java -jar /software/picard.jar  MarkDuplicates -I $file -O ${file/.wasp.bam/.ase.bam} -M ${file/.wasp.bam/_metrics.ase.txt}; done
-for file in *.ase.bam ; do java -jar /software/picard.jar BuildBamIndex -I $file; done
-
-for f in *.ase.bam; do echo -n "$f "; samtools stats "$f" | grep "bases mapped (cigar)"; done
-cat iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna.fasta | awk '/^>/ {next} {n += length($0)} END {print n}'
-
-```
-
-14. Profile ASE using GATK
-```
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP1_MKRN250026363-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP2_MKRN250026364-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CSxP3_RNA_MKRN250033262-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CSxP3.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I PxCS1_MKRN250026360-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O PxCS1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I PXCS2_RNA_MKRN250033261-1A_22VTNMLT4_L4.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O PxCS2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CS1_RNA_MKRN250026357-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CS1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CS2_RNA_MKRN250026358-1A_22VTNMLT4_L4.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CS2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I CS3_RNA_MKRN250026359-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O CS3.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I P1_RNA_MKRN250026354-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O P1.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I P2_RNA_MKRN250026355-1A_22VTNMLT4_L3.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O P2.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-/software/gatk-4.3.0.0/gatk ASEReadCounter -R iwgsc_refseqv2.1_part.fa -I P3_RNA_MKRN250026356-1A_22VTNMLT4_L4.ase.bam -V wheat_ase_snps_het.recode.vcf.gz -O P3.wasp.ase.tsv  --min-mapping-quality 20 --min-base-quality 20   --count-overlap-reads-handling COUNT_FRAGMENTS_REQUIRE_SAME_BASE --min-depth 10
-
-```
-15. Run differential expression tests using [`de_wheat.R`](./de_wheat.R). Based on preliminary analyses done by Cris https://github.com/crisforgiarini/Data-Gene-expression-and-methylation-in-intraspecific-hybrids-of-hexaploidy-wheat 
-
-16. Compare homoeolog expression bias for differentially expressed genes using [`assign_homoeolog_expression_bias_categories.R`](./assign_homoeolog_expression_bias_categories.R)
-
-17. Compare allele-specific expression using [`ase_test.R`](./ase_test.R). Also run [`mbased_cs.R`](./mbased_cs.R), [`mbased_cs_0.5.R`](./mbased_cs_0.5.R), and [`mbased_par.R`](./mbased_par.R) separately, as these take longer. 
-
-
-19. Trim bisulfite reads
+9. Trim bisulfite reads
 ```
 for file in P-1_R1.fq.gz; do java -jar $EBROOTTRIMMOMATIC/trimmomatic-0.39.jar PE -phred33 -threads 20 $file ${file/_R1.fq.gz/_R2.fq.gz} ${file/_R1.fq.gz/_1.paired.fq.gz} ${file/_R1.fq.gz/_1.unpaired.fq.gz} ${file/_R1.fq.gz/_2.paired.fq.gz} ${file/_R1.fq.gz/_2.unpaired.fq.gz} ILLUMINACLIP:TruSeq3-PE_sailgene.fa:2:30:10:2:True LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:36; done
 ```
 
-20. Index genome, map bisulfite reads and deduplicate
+10. Index genome, map bisulfite reads and deduplicate
 ```
 # genome folder has 161010_Chinese_Spring_v1.0_pseudomolecules_parts.fasta
 bismark_genome_preparation --hisat2 --verbose --parallel 5 genome
@@ -295,40 +97,40 @@ for file in *.paired.fq.gz ; do bismark --multicore 4 --hisat2 --genome_folder g
 for file in *_bismark_hisat2_pe.bam; do deduplicate_bismark -p --bam $file ; done
 ```
 
-21. Extract methylation counts
+11. Extract methylation counts
 ```
 for file in *.deduplicated.bam; do bismark_methylation_extractor --multicore 4 --gzip --bedGraph --buffer_size 280G --CX --genome_folder genome $file; done
 for file in *.deduplicated.bam; do coverage2cytosine --gzip --genome_folder genome --coverage_threshold 1 --CX -o ${file/.paired_bismark_hisat2_pe.deduplicated.bismark.cov.gz/} $file ; done
 ```
 
-22. Merge methylation counts from the three replicate libraries
+12. Merge methylation counts from the three replicate libraries
 ```
 ./merge_cx_reports.sh P-1_1.CX_report.txt.gz P-2_1.CX_report.txt.gz P-3_1.CX_report.txt.gz P_combined.CX_report.txt.gz
 ./merge_cx_reports.sh CS-1_1.CX_report.txt.gz CS-2_1.CX_report.txt.gz CS-3_1.CX_report.txt.gz CS_combined.CX_report.txt.gz
 ./merge_cx_reports.sh CSxP-1_1.CX_report.txt.gz CSxP-2_1.CX_report.txt.gz CSxP-3_1.CX_report.txt.gz CSxP_combined.CX_report.txt.gz
 ```
 
-23. From merged methylation count files, split into files containing seperate cytosine contexts using split_cx_report.sh
+13. From merged methylation count files, split into files containing seperate cytosine contexts using split_cx_report.sh
 ```
 ./split_cx_report.sh P_combined.CX_report.txt.gz
 ./split_cx_report.sh CS_combined.CX_report.txt.gz
 ./split_cx_report.sh CSxP_combined.CX_report.txt.gz
 ```
-24. For each CG methylation site pair (consecutive sites), it sums the methylated and unmethylated counts across both strands
+14. For each CG methylation site pair (consecutive sites), it sums the methylated and unmethylated counts across both strands
 ```
 ./collapse_cg_symmetric.sh P_combined.CX_report.CG_symmetric.txt.gz P_combined.CG_symmetric_collapsed.txt.gz
 ./collapse_cg_symmetric.sh CS_combined.CX_report.CG_symmetric.txt.gz CS_combined.CG_symmetric_collapsed.txt.gz
 ./collapse_cg_symmetric.sh CSxP_combined.CX_report.CG_symmetric.txt.gz CSxP_combined.CG_symmetric_collapsed.txt.gz
 ```
 
-25. For each CHG methylation site pair (two sites apart), it sums the methylated and unmethylated counts across both strands
+15. For each CHG methylation site pair (two sites apart), it sums the methylated and unmethylated counts across both strands
 ```
 ./collapse_chg_symmetric.sh P_combined.CX_report.CHG_symmetric.txt.gz P_combined.CHG_symmetric_collapsed.txt.gz
 ./collapse_chg_symmetric.sh CS_combined.CX_report.CHG_symmetric.txt.gz CS_combined.CHG_symmetric_collapsed.txt.gz
 ./collapse_chg_symmetric.sh CSxP_combined.CX_report.CHG_symmetric.txt.gz CSxP_combined.CHG_symmetric_collapsed.txt.gz
 ```
 
-26. Merge methylation counts from all three samples into a single file
+16. Merge methylation counts from all three samples into a single file
 ```
 ./methylation_merge.sh CS_combined.CX_report.CHH.txt.gz CSxP_combined.CX_report.CHH.txt.gz P_combined.CX_report.CHH.txt.gz merged_CHH_sites.txt.gz
 ./methylation_merge.sh CS_combined.CX_report.CHG_other.txt.gz CSxP_combined.CX_report.CHG_other.txt.gz P_combined.CX_report.CHG_other.txt.gz merged_CHG_other_sites.txt.gz
@@ -339,7 +141,7 @@ for file in *.deduplicated.bam; do coverage2cytosine --gzip --genome_folder geno
 
 ```
 
-27. Convert chromosome part coordinates into full genome coordinates for methylation sites
+17. Convert chromosome part coordinates into full genome coordinates for methylation sites
 ```
 awk 'BEGIN{FS=OFS="\t"} NR==FNR{c[$1]=$4; o[$1]=$5; next} FNR==1{print; next} {$2=$2+o[$1]; $1=c[$1]; print}' 161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed <(zcat merged_CG_symmetric.txt.gz) | gzip > merged_CG_symmetric_fullchr.txt.gz
 awk 'BEGIN{FS=OFS="\t"} NR==FNR{c[$1]=$4; o[$1]=$5; next} FNR==1{print; next} {$2=$2+o[$1]; $1=c[$1]; print}' 161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed <(zcat merged_CHG_symmetric.txt.gz) | gzip > merged_CHG_symmetric_fullchr.txt.gz
@@ -347,7 +149,7 @@ awk 'BEGIN{FS=OFS="\t"} NR==FNR{c[$1]=$4; o[$1]=$5; next} FNR==1{print; next} {$
 
 ```
 
-28. Identify C/T differences between CS and Paragon reference genomes. Whole genome alignments from Ensembl Plants
+18. Identify C/T differences between CS and Paragon reference genomes. Whole genome alignments from Ensembl Plants
 ```
 cd taes_iwgsc.v.tapa_gca949126075v1.lastz_net/
 for file in taes*.maf; do python3 maf_snps_cs_vs_paragon_plain.py $file >${file/.maf/_snps.txt}; done
@@ -356,7 +158,7 @@ awk '($4=="C"&&$5=="T")||($4=="T"&&$5=="C"){chr=$1;sub(/^triticum_aestivum\./,"c
 
 ```
 
-29. Obtain v1 genome coordinates for gene rich (states 1-4) and TE rich, H3K9me2	Intergenic region (state 13) from Li et al 2019 https://doi.org/10.1186/s13059-019-1746-8
+19. Obtain v1 genome coordinates for gene rich (states 1-4) and TE rich, H3K9me2	Intergenic region (state 13) from Li et al 2019 https://doi.org/10.1186/s13059-019-1746-8
 ```
 wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state1.txt
 wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state2.txt
@@ -368,7 +170,7 @@ sed  -e '/region/d' -e '/chrom/d' state13.txt | cut -f 6-8 | sed 's/$/\t13/' > s
 cat state1-4.txt  state13_2.txt >chromatin_states.txt
 ```
 
-29. Remove methylation sites with C/T differences between CS and Paragon reference genomes. The classify sites based on inheritance categories. Classification scheme based on scripts developed by Asena: https://github.com/AsenaArdaman/Hybrid_inheritance_models.
+20. Remove methylation sites with C/T differences between CS and Paragon reference genomes. The classify sites based on inheritance categories. Classification scheme based on scripts developed by Asena: https://github.com/AsenaArdaman/Hybrid_inheritance_models.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CG_symmetric_all.txt.gz
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CHG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CHG_symmetric_all.txt.gz
@@ -391,9 +193,9 @@ boman_classification_chromatin_chg.R
 boman_classification_chromatin_chh.R
 ```
 
-30. Convert IWGSC v1.1 gene annotation into BED files for CDS for the longest transcript and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs using [`bed_intervals.sh`](./bed_intervals.sh)
+21. Convert IWGSC v1.1 gene annotation into BED files for CDS for the longest transcript and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs using [`bed_intervals.sh`](./bed_intervals.sh)
 
-31. Subset CDS regions from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
+22. Subset CDS regions from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b CDS.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_CDS.txt.gz
 zcat merged_CG_symmetric_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp && mv tmp merged_CG_symmetric_CDS.txt.gz
@@ -408,7 +210,7 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 #python3 subset_chh_by_cds.py CDS.bed merged_CHH_all.txt.gz merged_CHH_all_CDS.txt.gz
 ```
 
-32. Subset promoter regions (1Kb upstream) from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
+23. Subset promoter regions (1Kb upstream) from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_promoter1kb.txt.gz
 
@@ -419,7 +221,7 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 # old
 # python3 subset_chh_by_cds.py promoter1kb.bed merged_CHH_all.txt.gz merged_CHH_promoter1kb.txt.gz
 ```
-33. Subset TE regions from methylation sites. Data available on https://doi.org/10.6084/m9.figshare.32144041.
+24. Subset TE regions from methylation sites. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 ## create bed interval file containing coordinates for TE and metadata
 ./create_TE_bed.sh
@@ -437,9 +239,9 @@ Rscript gene_chg_te.R
 Rscript genen_chh_te.R 
 ```
 
-34. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R),[`boman_classification_snp.R`](./boman_classification_snp.R), [`gbM_wheat.R`](./gbM_wheat.R), and [`te_meth.R`](./te_meth.R)
+25. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R),[`boman_classification_snp.R`](./boman_classification_snp.R), [`gbM_wheat.R`](./gbM_wheat.R), and [`te_meth.R`](./te_meth.R)
 
-35. Obtain tissue expression data and run [`tissue_specific.R`](./tissue_specific.R) to repeat classifications and associate expression breadth with gbM
+26. Obtain tissue expression data and run [`tissue_specific.R`](./tissue_specific.R) to repeat classifications and associate expression breadth with gbM
 ```
 wget -c https://urgi.versailles.inrae.fr/download/iwgsc/IWGSC_RefSeq_Annotations/v1.1/iwgsc_refseqv1.1_rnaseq_mapping_2017July20.zip
 ```
