@@ -210,7 +210,7 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 #python3 subset_chh_by_cds.py CDS.bed merged_CHH_all.txt.gz merged_CHH_all_CDS.txt.gz
 ```
 
-23. Subset promoter regions (1Kb upstream) from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
+23. Subset promoter regions (1Kb upstream) from methylation sites. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_promoter1kb.txt.gz
 
