@@ -81,7 +81,7 @@ for file in *.cs.sam; do samtools sort -n -@ 10 -O bam -o ${file/.cs.sam/.sortna
 for file in *.sortname.cs.bam; do samtools view $file| python3 count_unique_reads.py > ${file/sortname.cs.bam/tsv} ; done
 ```
 
-8. Compare homoeolog expression bias for differentially expressed genes using [`assign_homoeolog_expression_bias_categories.R`](./assign_homoeolog_expression_bias_categories.R)
+8. Compare homoeolog expression bias for differentially expressed genes using [`assign_homoeolog_expression_bias_categories.R`](./assign_homoeolog_expression_bias_categories.R) and [`HEB.R`](./HEB.R)
 
 9. Trim bisulfite reads
 ```
