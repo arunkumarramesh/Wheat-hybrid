@@ -9,11 +9,8 @@
 | [`SingleCopyOrthologues_matrix.tsv`](SingleCopyOrthologues_matrix.tsv) | One-to-one orthologues identified between Chinese Spring IWGSC RefSeq v2.1 and Paragon GCA949126075v1. |
 | [`BP.csv`](BP.csv), [`MF.csv`](MF.csv), [`CC.csv`](CC.csv) | Gene Ontology annotation files for IWGSC RefSeq v2.1 genes. |
 | [`homoeologs_1_1_1_synt_and_non_synt.csv`](homoeologs_1_1_1_synt_and_non_synt.csv) | Triad classification from Ramírez-González et al., *Science*, DOI: 10.1126/science.aar6089. |
-| [`gene.gff3`](gene.gff3) | Genomic locations of IWGSC RefSeq v2.1 genes. |
 | [`bias_category_all_samples_inc_orig_expr.csv`](bias_category_all_samples_inc_orig_expr.csv) | Triad identification and homoeolog expression-bias categories. |
 | [`iwgsc_refseq_all_correspondances.csv`](iwgsc_refseq_all_correspondances.csv) | v1.1 to v2.1 IWGSC RefSeq gene IDs from urgi.versailles.inrae.fr. |
-| [`transcript_to_gene_refseqv2.1.csv`](transcript_to_gene_refseqv2.1.csv) | Mapping of transcript IDs to gene IDs for IWGSC RefSeq v2.1. |
-| [`part_sizes.txt`](part_sizes.txt) | Chromosome part sizes for Chinese Spring IWGSC RefSeq v2.1. |
 | [`161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed`](161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed)  | Chromosome part sizes for IWGSC v1.0. |
 | [`CDS.bed`](CDS.bed.gz)  | CDS interval for longest transcript |
 | [`promoter1kb.bed`](promoter1kb.bed.gz)  | 1Kb Promoter interval |
@@ -28,13 +25,6 @@
 | [`cs_count.tsv`](cs_count.tsv) | Gene read counts estimated using the Chinese Spring IWGSC RefSeq v2.1 reference. |
 | [`cs_tpm.tsv`](cs_tpm.tsv) | Transcript-per-million estimates generated using the Chinese Spring IWGSC RefSeq v2.1 reference. |
 | [`cs_gene_lengths.csv`](cs_gene_lengths.csv) | Gene lengths for the Chinese Spring IWGSC RefSeq v2.1 reference. |
-
-### Variant and SNP datasets
-
-| File | Description |
-|---|---|
-| [`wheat_ase_het_snps_filtered.vcf.gz`](wheat_ase_het_snps_filtered.vcf.gz) | Heterozygous SNPs suitable for ASE analysis based on the IWGSC RefSeq v2.1 reference. |
-| [`wheat_het_snps_filtered.vcf.zip`](wheat_het_snps_filtered.vcf.zip) | Heterozygous SNPs based on the IWGSC RefSeq v2.1 reference, not restricted to ASE sites. |
 
 
 ### Differential expression results
