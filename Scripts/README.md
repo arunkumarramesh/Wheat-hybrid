@@ -152,7 +152,7 @@ awk 'BEGIN{FS=OFS="\t"} NR==FNR{c[$1]=$4; o[$1]=$5; next} FNR==1{print; next} {$
 18. Identify C/T differences between CS and Paragon reference genomes. Whole genome alignments from Ensembl Plants
 ```
 cd taes_iwgsc.v.tapa_gca949126075v1.lastz_net/
-for file in taes*.maf; do python3 maf_snps_cs_vs_paragon_plain.py $file >${file/.maf/_snps.txt}; done
+for file in taes*.maf; do python3 maf_snps_cs_paragon.py $file >${file/.maf/_snps.txt}; done
 cat *_snps.txt | sed '/cs_src/d' > ../cs_par_snps.txt
 awk '($4=="C"&&$5=="T")||($4=="T"&&$5=="C"){chr=$1;sub(/^triticum_aestivum\./,"chr",chr);print chr,$2,$3}' OFS="\t" cs_par_snps.txt > ct_snps.bed
 
