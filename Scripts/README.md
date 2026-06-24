@@ -68,7 +68,7 @@ cat SingleCopyOrthologues_matrix_A.tsv SingleCopyOrthologues_matrix_B.tsv Single
 
 6. Run differential expression tests using [`de_wheat.R`](./de_wheat.R). Based on preliminary analyses done by Cris https://github.com/crisforgiarini/Data-Gene-expression-and-methylation-in-intraspecific-hybrids-of-hexaploidy-wheat
 
-7. Identify genes showing allele-specific expression using combined transcriptome reference
+7. Identify genes showing allele-specific expression using combined transcriptome reference. Then do ASE analyses using [`ase_new.R`](./ase_new.R)
 ```
 python3 longest_transcript_ref.py iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna.fasta  iwgsc_refseqv2.1_annotation_200916_HC_LC_mrna_longest.fasta
 python3 longest_transcript_ref.py Triticum_aestivum_paragon.GCA949126075v1.cdna.all.fa Triticum_aestivum_paragon.GCA949126075v1.cdna.longest.fa
