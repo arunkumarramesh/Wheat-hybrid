@@ -12,8 +12,8 @@
 | [`bias_category_all_samples_inc_orig_expr.csv`](bias_category_all_samples_inc_orig_expr.csv) | Triad identification and homoeolog expression-bias categories. |
 | [`iwgsc_refseq_all_correspondances.csv`](iwgsc_refseq_all_correspondances.csv) | v1.1 to v2.1 IWGSC RefSeq gene IDs from urgi.versailles.inrae.fr. |
 | [`161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed`](161010_Chinese_Spring_v1.0_pseudomolecules_parts_to_chr.bed)  | Chromosome part sizes for IWGSC v1.0. |
-| [`CDS.bed`](CDS.bed.gz)  | CDS interval for longest transcript |
-| [`promoter1kb.bed`](promoter1kb.bed.gz)  | 1Kb Promoter interval |
+| [`CDS.bed`](CDS.bed)  | CDS interval for longest transcript |
+| [`promoter1kb.bed`](promoter1kb.bed)  | 1Kb Promoter interval |
 | [`cs_par_snps_50kb_counts.tsv`](cs_par_snps_50kb_counts.tsv)  | Number of SNVs per 50kb between IWGSC v1.0 and GCA949126075v1 reference.|
 | [`chromatin_states.txt.zip`](chromatin_states.txt.zip)  | File containing IWGSC v1.0 coordinates for chromatin states 1-4 and 13 defined in Li et al 2019 https://doi.org/10.1186/s13059-019-1746-8 |
 | [`choulet_gene_tissue.tsv`](choulet_gene_tissue.tsv) | Gene IDs and expression breadth classification |
