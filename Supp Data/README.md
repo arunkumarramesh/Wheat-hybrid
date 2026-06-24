@@ -57,10 +57,3 @@
 | [`CDS_meth_pct.txt`](CDS_meth_pct.txt) | Mean CG, CHG and CHH methylation across CDS of bread wheat genes. |
 | [`promoter_meth_pct.txt`](promoter_meth_pct.txt) | Mean CG, CHG and CHH methylation across promoters of bread wheat genes. |
 | [`gene_body_methylation.tsv`](gene_body_methylation.tsv) | Classification of genes as gbM or non-gbM in Chinese Spring, Paragon, and their hybrid. |
-| [`gbM_by_regulatory_state.csv`](gbM_by_regulatory_state.csv) | gbM and non-gbM classifications combined with gene regulatory classifications. |
-| [`Methylation_Regulatory_cg_cds.txt`](Methylation_Regulatory_cg_cds.txt) | Regulatory classifications combined with CG methylation inheritance classifications in coding sequences. |
-| [`Methylation_Regulatory_chg_cds.txt`](Methylation_Regulatory_chg_cds.txt) | Regulatory classifications combined with CHG methylation inheritance classifications in coding sequences. |
-| [`Methylation_Regulatory_chh_cds.txt`](Methylation_Regulatory_chh_cds.txt) | Regulatory classifications combined with CHH methylation inheritance classifications in coding sequences. |
-| [`Methylation_Regulatory_cg_promoter.txt`](Methylation_Regulatory_cg_promoter.txt) | Regulatory classifications combined with CG methylation inheritance classifications in 1 kb promoter regions. |
-| [`Methylation_Regulatory_chg_promoter.txt`](Methylation_Regulatory_chg_promoter.txt) | Regulatory classifications combined with CHG methylation inheritance classifications in 1 kb promoter regions. |
-| [`Methylation_Regulatory_chh_promoter.txt`](Methylation_Regulatory_chh_promoter.txt) | Regulatory classifications combined with CHH methylation inheritance classifications in 1 kb promoter regions. |
