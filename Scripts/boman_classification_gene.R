@@ -442,6 +442,491 @@ pdf(file = "mean_methylation_by_category_cg_cds.pdf", width = 4, height = 4)
 print(p_meth_cat)
 dev.off()
 
+
+dt <- fread("merged_CHG_symmetric_CDS.txt.gz")
+dt <- dt[cov_CS > 10 & cov_CSxP > 10 & cov_P > 10]
+dt$subgenome <- sub("^chr[0-9]+([ABD])$", "\\1", dt$chr)
+dt <- dt[subgenome %in% c("A", "B", "D")]
+dt$A <- dt$pct_CS / 100
+dt$H <- dt$pct_CSxP / 100
+dt$B <- dt$pct_P / 100
+dt$x <- dt$H - dt$A
+dt$y <- dt$H - dt$B
+dt$radius <- sqrt(dt$x^2 + dt$y^2)
+dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
+circ_dist <- function(a, b) {
+  d <- abs(a - b)
+  pmin(d, 360 - d)
+}
+nearest_sector_center <- function(angle_deg) {
+  centers <- c(0, 45, 90, 135, 180, 225, 270, 315)
+  centers[which.min(circ_dist(angle_deg, centers))]
+}
+sector_to_class <- function(sector_center) {
+  if (sector_center %in% c(0, 180)) {
+    "P_dominant"
+  } else if (sector_center %in% c(90, 270)) {
+    "CS_dominant"
+  } else if (sector_center %in% c(135, 315)) {
+    "additive"
+  } else if (sector_center == 45) {
+    "overdominant"
+  } else if (sector_center == 225) {
+    "underdominant"
+  } else {
+    NA_character_
+  }
+}
+dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
+dt$max_mC <- pmax(dt$A, dt$H, dt$B, na.rm=TRUE)
+dt <- dt[max_mC >= 0.1]
+dt$category <- ifelse(dt$radius < 0.1, "conserved_mC", vapply(dt$sector_center, sector_to_class, character(1)))
+category_levels <- c("conserved_mC", "additive", "CS_dominant", "P_dominant", "overdominant", "underdominant")
+dt$category <- factor(dt$category, levels=category_levels)
+ci_summary <- function(x, by_cols, value_col) {
+  out <- x[, list(N=sum(!is.na(get(value_col))), mean_value=mean(get(value_col), na.rm=TRUE), sd_value=sd(get(value_col), na.rm=TRUE)), by=by_cols]
+  out$se <- out$sd_value / sqrt(out$N)
+  out$ci <- qt(0.975, df=out$N - 1) * out$se
+  out$ci_low <- out$mean_value - out$ci
+  out$ci_high <- out$mean_value + out$ci
+  out
+}
+meth_long_cat <- rbind(
+  data.table(category=dt$category, sample="CS", pct=dt$pct_CS),
+  data.table(category=dt$category, sample="CSxP", pct=dt$pct_CSxP),
+  data.table(category=dt$category, sample="P", pct=dt$pct_P)
+)
+meth_long_cat$category <- factor(meth_long_cat$category, levels=category_levels)
+meth_long_cat$sample <- factor(meth_long_cat$sample, levels=c("CS", "CSxP", "P"))
+meth_cat_summary <- ci_summary(meth_long_cat, c("category", "sample"), "pct")
+setnames(meth_cat_summary, "mean_value", "mean_pct")
+meth_cat_summary$category <- factor(meth_cat_summary$category, levels=category_levels)
+meth_cat_summary$sample <- factor(meth_cat_summary$sample, levels=c("CS", "CSxP", "P"))
+sample_cols <- c(CS="#0072B2", CSxP="#E69F00", P="#CC79A7")
+p_meth_cat <- ggplot(meth_cat_summary, aes(x=sample, y=mean_pct, fill=sample)) +
+  geom_col(width=0.7, colour="black", linewidth=0.3) +
+  geom_errorbar(aes(ymin=ci_low, ymax=ci_high), width=0.2, linewidth=0.4) +
+  facet_wrap(~category, ncol=3, nrow=2) +
+  scale_fill_manual(values=sample_cols) +
+  scale_y_continuous(limits=c(0, 100), expand=expansion(mult=c(0, 0.05))) +
+  labs(x=NULL, y="Mean methylation level (%)", fill=NULL) +
+  theme_bw(base_size=12) +
+  theme(panel.grid.minor=element_blank(), panel.grid.major=element_line(linewidth=0.2, colour="grey90"), strip.background=element_rect(fill="white", colour="black"), legend.position="none", plot.title=element_text(face="bold"), axis.title=element_text(face="bold"))
+pdf(file="mean_methylation_by_category_chg_cds.pdf", width=4, height=4)
+print(p_meth_cat)
+dev.off()
+
+
+dt <- fread("merged_CHH_all_CDS.txt.gz")
+dt <- dt[cov_CS > 10 & cov_CSxP > 10 & cov_P > 10]
+dt$subgenome <- sub("^chr[0-9]+([ABD])$", "\\1", dt$chr)
+dt <- dt[subgenome %in% c("A", "B", "D")]
+dt$A <- dt$pct_CS / 100
+dt$H <- dt$pct_CSxP / 100
+dt$B <- dt$pct_P / 100
+dt$x <- dt$H - dt$A
+dt$y <- dt$H - dt$B
+dt$radius <- sqrt(dt$x^2 + dt$y^2)
+dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
+circ_dist <- function(a, b) {
+  d <- abs(a - b)
+  pmin(d, 360 - d)
+}
+nearest_sector_center <- function(angle_deg) {
+  centers <- c(0, 45, 90, 135, 180, 225, 270, 315)
+  centers[which.min(circ_dist(angle_deg, centers))]
+}
+sector_to_class <- function(sector_center) {
+  if (sector_center %in% c(0, 180)) {
+    "P_dominant"
+  } else if (sector_center %in% c(90, 270)) {
+    "CS_dominant"
+  } else if (sector_center %in% c(135, 315)) {
+    "additive"
+  } else if (sector_center == 45) {
+    "overdominant"
+  } else if (sector_center == 225) {
+    "underdominant"
+  } else {
+    NA_character_
+  }
+}
+dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
+dt$max_mC <- pmax(dt$A, dt$H, dt$B, na.rm=TRUE)
+dt <- dt[max_mC >= 0.1]
+dt$category <- ifelse(dt$radius < 0.1, "conserved_mC", vapply(dt$sector_center, sector_to_class, character(1)))
+category_levels <- c("conserved_mC", "additive", "CS_dominant", "P_dominant", "overdominant", "underdominant")
+dt$category <- factor(dt$category, levels=category_levels)
+ci_summary <- function(x, by_cols, value_col) {
+  out <- x[, list(N=sum(!is.na(get(value_col))), mean_value=mean(get(value_col), na.rm=TRUE), sd_value=sd(get(value_col), na.rm=TRUE)), by=by_cols]
+  out$se <- out$sd_value / sqrt(out$N)
+  out$ci <- qt(0.975, df=out$N - 1) * out$se
+  out$ci_low <- out$mean_value - out$ci
+  out$ci_high <- out$mean_value + out$ci
+  out
+}
+meth_long_cat <- rbind(
+  data.table(category=dt$category, sample="CS", pct=dt$pct_CS),
+  data.table(category=dt$category, sample="CSxP", pct=dt$pct_CSxP),
+  data.table(category=dt$category, sample="P", pct=dt$pct_P)
+)
+meth_long_cat$category <- factor(meth_long_cat$category, levels=category_levels)
+meth_long_cat$sample <- factor(meth_long_cat$sample, levels=c("CS", "CSxP", "P"))
+meth_cat_summary <- ci_summary(meth_long_cat, c("category", "sample"), "pct")
+setnames(meth_cat_summary, "mean_value", "mean_pct")
+meth_cat_summary$category <- factor(meth_cat_summary$category, levels=category_levels)
+meth_cat_summary$sample <- factor(meth_cat_summary$sample, levels=c("CS", "CSxP", "P"))
+sample_cols <- c(CS="#0072B2", CSxP="#E69F00", P="#CC79A7")
+p_meth_cat <- ggplot(meth_cat_summary, aes(x=sample, y=mean_pct, fill=sample)) +
+  geom_col(width=0.7, colour="black", linewidth=0.3) +
+  geom_errorbar(aes(ymin=ci_low, ymax=ci_high), width=0.2, linewidth=0.4) +
+  facet_wrap(~category, ncol=3, nrow=2) +
+  scale_fill_manual(values=sample_cols) +
+  scale_y_continuous(limits=c(0, 100), expand=expansion(mult=c(0, 0.05))) +
+  labs(x=NULL, y="Mean methylation level (%)", fill=NULL) +
+  theme_bw(base_size=12) +
+  theme(panel.grid.minor=element_blank(), panel.grid.major=element_line(linewidth=0.2, colour="grey90"), strip.background=element_rect(fill="white", colour="black"), legend.position="none", plot.title=element_text(face="bold"), axis.title=element_text(face="bold"))
+pdf(file="mean_methylation_by_category_chh_cds.pdf", width=4, height=4)
+print(p_meth_cat)
+dev.off()
+
+
+library(data.table)
+library(ggplot2)
+library(cowplot)
+library(ragg)
+
+dt <- fread("merged_CHG_symmetric_CDS.txt.gz")
+
+dt <- dt[cov_CS > 10 & cov_CSxP > 10 & cov_P > 10]
+
+dt$subgenome <- sub("^chr[0-9]+([ABD])$", "\\1", dt$chr)
+dt <- dt[subgenome %in% c("A", "B", "D")]
+dt$subgenome <- factor(dt$subgenome, levels = c("A", "B", "D"))
+
+dt$A <- dt$pct_CS / 100
+dt$H <- dt$pct_CSxP / 100
+dt$B <- dt$pct_P / 100
+
+dt$x <- dt$H - dt$A
+dt$y <- dt$H - dt$B
+dt$radius <- sqrt(dt$x^2 + dt$y^2)
+dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
+
+circ_dist <- function(a, b) {
+  d <- abs(a - b)
+  pmin(d, 360 - d)
+}
+
+nearest_sector_center <- function(angle_deg) {
+  centers <- c(0, 45, 90, 135, 180, 225, 270, 315)
+  centers[which.min(circ_dist(angle_deg, centers))]
+}
+
+sector_to_class <- function(sector_center) {
+  if (sector_center %in% c(0, 180)) {
+    "P_dominant"
+  } else if (sector_center %in% c(90, 270)) {
+    "CS_dominant"
+  } else if (sector_center %in% c(135, 315)) {
+    "additive"
+  } else if (sector_center == 45) {
+    "overdominant"
+  } else if (sector_center == 225) {
+    "underdominant"
+  } else {
+    NA_character_
+  }
+}
+
+dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
+dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
+dt <- dt[max_mC >= 0.1]
+dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
+category_levels <- c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")
+dt$category <- factor(dt$category, levels = category_levels)
+
+
+cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#0072B2", P_dominant = "#CC79A7", overdominant = "#E69F00", underdominant = "#1B7837")
+
+category_counts <- dt %>% 
+  count(category) %>% 
+  mutate(percentage = n / sum(n) * 100) %>% 
+  mutate(label = paste0(category, " (", round(percentage, 2), "%)"))
+
+legend_labels <- setNames(category_counts$label, category_counts$category)
+
+a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_abline(intercept = 0, slope = tan(c(1, 3, 5, 7) * pi / 8), color = "gray70", linetype = "dotted") +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CSxP - P methylation %", y = "Mean CSxP - CS methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) ) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CS - P methylation %", y = "Mean CSxP - MPV methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+ggsave(filename = "boman_class_geometric_chg.png",plot = plot_grid(a_plot, b_plot, ncol=2),width = 10,height = 3,units = "in",dpi = 300,device = ragg::agg_png,bg = "white")
+
+
+
+dt <- fread("merged_CHH_all_CDS.txt.gz")
+dt <- dt[cov_CS > 10 & cov_CSxP > 10 & cov_P > 10]
+
+dt$subgenome <- sub("^chr[0-9]+([ABD])$", "\\1", dt$chr)
+dt <- dt[subgenome %in% c("A", "B", "D")]
+dt$subgenome <- factor(dt$subgenome, levels = c("A", "B", "D"))
+
+dt$A <- dt$pct_CS / 100
+dt$H <- dt$pct_CSxP / 100
+dt$B <- dt$pct_P / 100
+
+dt$x <- dt$H - dt$A
+dt$y <- dt$H - dt$B
+dt$radius <- sqrt(dt$x^2 + dt$y^2)
+dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
+
+circ_dist <- function(a, b) {
+  d <- abs(a - b)
+  pmin(d, 360 - d)
+}
+
+nearest_sector_center <- function(angle_deg) {
+  centers <- c(0, 45, 90, 135, 180, 225, 270, 315)
+  centers[which.min(circ_dist(angle_deg, centers))]
+}
+
+sector_to_class <- function(sector_center) {
+  if (sector_center %in% c(0, 180)) {
+    "P_dominant"
+  } else if (sector_center %in% c(90, 270)) {
+    "CS_dominant"
+  } else if (sector_center %in% c(135, 315)) {
+    "additive"
+  } else if (sector_center == 45) {
+    "overdominant"
+  } else if (sector_center == 225) {
+    "underdominant"
+  } else {
+    NA_character_
+  }
+}
+
+dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
+dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
+dt <- dt[max_mC >= 0.1]
+dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
+category_levels <- c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")
+dt$category <- factor(dt$category, levels = category_levels)
+
+
+cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#0072B2", P_dominant = "#CC79A7", overdominant = "#E69F00", underdominant = "#1B7837")
+
+category_counts <- dt %>% 
+  count(category) %>% 
+  mutate(percentage = n / sum(n) * 100) %>% 
+  mutate(label = paste0(category, " (", round(percentage, 2), "%)"))
+
+legend_labels <- setNames(category_counts$label, category_counts$category)
+
+a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_abline(intercept = 0, slope = tan(c(1, 3, 5, 7) * pi / 8), color = "gray70", linetype = "dotted") +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CSxP - P methylation %", y = "Mean CSxP - CS methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) ) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CS - P methylation %", y = "Mean CSxP - MPV methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+ggsave(filename = "boman_class_geometric_chh.png",plot = plot_grid(a_plot, b_plot, ncol=2),width = 10,height = 3,units = "in",dpi = 300,device = ragg::agg_png,bg = "white")
+
+library(data.table)
+library(ggplot2)
+library(cowplot)
+library(ragg)
+
+dt <- fread("merged_CHG_symmetric_CDS.txt.gz")
+
+dt <- dt[cov_CS > 10 & cov_CSxP > 10 & cov_P > 10]
+
+dt$subgenome <- sub("^chr[0-9]+([ABD])$", "\\1", dt$chr)
+dt <- dt[subgenome %in% c("A", "B", "D")]
+dt$subgenome <- factor(dt$subgenome, levels = c("A", "B", "D"))
+
+dt$A <- dt$pct_CS / 100
+dt$H <- dt$pct_CSxP / 100
+dt$B <- dt$pct_P / 100
+
+dt$x <- dt$H - dt$A
+dt$y <- dt$H - dt$B
+dt$radius <- sqrt(dt$x^2 + dt$y^2)
+dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
+
+circ_dist <- function(a, b) {
+  d <- abs(a - b)
+  pmin(d, 360 - d)
+}
+
+nearest_sector_center <- function(angle_deg) {
+  centers <- c(0, 45, 90, 135, 180, 225, 270, 315)
+  centers[which.min(circ_dist(angle_deg, centers))]
+}
+
+sector_to_class <- function(sector_center) {
+  if (sector_center %in% c(0, 180)) {
+    "P_dominant"
+  } else if (sector_center %in% c(90, 270)) {
+    "CS_dominant"
+  } else if (sector_center %in% c(135, 315)) {
+    "additive"
+  } else if (sector_center == 45) {
+    "overdominant"
+  } else if (sector_center == 225) {
+    "underdominant"
+  } else {
+    NA_character_
+  }
+}
+
+dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
+dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
+dt <- dt[max_mC >= 0.1]
+dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
+category_levels <- c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")
+dt$category <- factor(dt$category, levels = category_levels)
+
+
+cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#0072B2", P_dominant = "#CC79A7", overdominant = "#E69F00", underdominant = "#1B7837")
+
+category_counts <- dt %>% 
+  count(category) %>% 
+  mutate(percentage = n / sum(n) * 100) %>% 
+  mutate(label = paste0(category, " (", round(percentage, 2), "%)"))
+
+legend_labels <- setNames(category_counts$label, category_counts$category)
+
+a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_abline(intercept = 0, slope = tan(c(1, 3, 5, 7) * pi / 8), color = "gray70", linetype = "dotted") +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CSxP - P methylation %", y = "Mean CSxP - CS methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) ) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CS - P methylation %", y = "Mean CSxP - MPV methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+ggsave(filename = "boman_class_geometric_chg.png",plot = plot_grid(a_plot, b_plot, ncol=2),width = 10,height = 3,units = "in",dpi = 300,device = ragg::agg_png,bg = "white")
+
+
+
+dt <- fread("merged_CHH_all_CDS.txt.gz")
+dt <- dt[cov_CS > 10 & cov_CSxP > 10 & cov_P > 10]
+
+dt$subgenome <- sub("^chr[0-9]+([ABD])$", "\\1", dt$chr)
+dt <- dt[subgenome %in% c("A", "B", "D")]
+dt$subgenome <- factor(dt$subgenome, levels = c("A", "B", "D"))
+
+dt$A <- dt$pct_CS / 100
+dt$H <- dt$pct_CSxP / 100
+dt$B <- dt$pct_P / 100
+
+dt$x <- dt$H - dt$A
+dt$y <- dt$H - dt$B
+dt$radius <- sqrt(dt$x^2 + dt$y^2)
+dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
+
+circ_dist <- function(a, b) {
+  d <- abs(a - b)
+  pmin(d, 360 - d)
+}
+
+nearest_sector_center <- function(angle_deg) {
+  centers <- c(0, 45, 90, 135, 180, 225, 270, 315)
+  centers[which.min(circ_dist(angle_deg, centers))]
+}
+
+sector_to_class <- function(sector_center) {
+  if (sector_center %in% c(0, 180)) {
+    "P_dominant"
+  } else if (sector_center %in% c(90, 270)) {
+    "CS_dominant"
+  } else if (sector_center %in% c(135, 315)) {
+    "additive"
+  } else if (sector_center == 45) {
+    "overdominant"
+  } else if (sector_center == 225) {
+    "underdominant"
+  } else {
+    NA_character_
+  }
+}
+
+dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
+dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
+dt <- dt[max_mC >= 0.1]
+dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
+category_levels <- c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")
+dt$category <- factor(dt$category, levels = category_levels)
+
+
+cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#0072B2", P_dominant = "#CC79A7", overdominant = "#E69F00", underdominant = "#1B7837")
+
+category_counts <- dt %>% 
+  count(category) %>% 
+  mutate(percentage = n / sum(n) * 100) %>% 
+  mutate(label = paste0(category, " (", round(percentage, 2), "%)"))
+
+legend_labels <- setNames(category_counts$label, category_counts$category)
+
+a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_abline(intercept = 0, slope = tan(c(1, 3, 5, 7) * pi / 8), color = "gray70", linetype = "dotted") +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CSxP - P methylation %", y = "Mean CSxP - CS methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) ) +
+  geom_point(aes(color = category), size = 1, alpha = 1) +
+  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
+  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
+  scale_color_manual(values = cat_cols) + 
+  labs(x = "Mean CS - P methylation %", y = "Mean CSxP - MPV methylation %",color = "") +
+  theme_minimal(base_size = 12) +
+  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
+
+ggsave(filename = "boman_class_geometric_chh.png",plot = plot_grid(a_plot, b_plot, ncol=2),width = 10,height = 3,units = "in",dpi = 300,device = ragg::agg_png,bg = "white")
+
 ## expression level by cytosine context
 
 library(data.table)
@@ -522,6 +1007,7 @@ ggplot(plot_dt, aes(x = log2_TPM, y = methylation_pct, colour = context)) +
 dev.off()
 
 meth_long <- read.table(file="CDS_meth_pct.txt",header=T)
+
 
 homologies <- read.csv(file="homologies.csv")
 homologies <- homologies[1:4]
@@ -783,137 +1269,6 @@ ggplot(data = meth_bias_all, aes(x = meth_dist_CS_hybrid, y = meth_dist_P_hybrid
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"), strip.background = element_rect(fill = "white", colour = "black"), plot.title = element_text(face = "bold"), legend.position = "none")
 dev.off()
 
-
-## heatmap methylation categories and regulatory classes
-
-library(data.table)
-library(dplyr)
-library(ggplot2)
-library(scales)
-library(ggtext)
-
-circ_dist <- function(a,b) {
-  d <- abs(a - b)
-  pmin(d,360 - d)
-}
-
-nearest_sector_center <- function(angle_deg) {
-  centers <- c(0,45,90,135,180,225,270,315)
-  centers[which.min(circ_dist(angle_deg,centers))]
-}
-
-sector_to_class <- function(sector_center) {
-  if (sector_center %in% c(0,180)) {
-    "P_dominant"
-  } else if (sector_center %in% c(90,270)) {
-    "CS_dominant"
-  } else if (sector_center %in% c(135,315)) {
-    "additive"
-  } else if (sector_center == 45) {
-    "overdominant"
-  } else if (sector_center == 225) {
-    "underdominant"
-  } else {
-    NA_character_
-  }
-}
-
-ital_words <- function(x) {
-  x <- gsub("\\b[Cc]is\\b","<i>cis</i>",x,perl = TRUE)
-  x <- gsub("\\b[Tt]rans\\b","<i>trans</i>",x,perl = TRUE)
-  x
-}
-
-Reg_Class <- read.csv(file = "classified_all.csv",header = TRUE)
-Reg_Class <- Reg_Class[!Reg_Class$category %in% "Ambiguous",]
-colnames(Reg_Class)[1] <- "gene_id"
-
-run_methylation_classification <- function(infile,context,remove_col3 = FALSE) {
-  dt <- fread(infile)
-  
-  if (remove_col3) {
-    dt <- dt[,-3]
-  }
-  
-  dt <- dt %>%
-    mutate(meth_CS = round((pct_CS / 100) * cov_CS),meth_CSxP = round((pct_CSxP / 100) * cov_CSxP),meth_P = round((pct_P / 100) * cov_P),site_CS = cov_CS > 0,site_CSxP = cov_CSxP > 0,site_P = cov_P > 0) %>%
-    group_by(gene_id) %>%
-    summarise(meth_CS = sum(meth_CS,na.rm = TRUE),cov_CS = sum(cov_CS,na.rm = TRUE),site_CS = sum(site_CS,na.rm = TRUE),meth_CSxP = sum(meth_CSxP,na.rm = TRUE),cov_CSxP = sum(cov_CSxP,na.rm = TRUE),site_CSxP = sum(site_CSxP,na.rm = TRUE),meth_P = sum(meth_P,na.rm = TRUE),cov_P = sum(cov_P,na.rm = TRUE),site_P = sum(site_P,na.rm = TRUE),.groups = "drop") %>%
-    mutate(pct_CS = 100 * meth_CS / cov_CS,pct_CSxP = 100 * meth_CSxP / cov_CSxP,pct_P = 100 * meth_P / cov_P) %>%
-    filter(cov_CS > 10,cov_CSxP > 10,cov_P > 10,site_CS >= 5,site_CSxP >= 5,site_P >= 5) %>%
-    mutate(subgenome = sub("^TraesCS[0-9]+([ABD]).*","\\1",gene_id),subgenome = factor(subgenome,levels = c("A","B","D"))) %>%
-    filter(subgenome %in% c("A","B","D")) %>%
-    mutate(A = pct_CS / 100,H = pct_CSxP / 100,B = pct_P / 100) %>%
-    filter(pmax(A,H,B,na.rm = TRUE) >= 0.01) %>%
-    mutate(x = H - A,y = H - B,radius = sqrt(x^2 + y^2),angle_deg = (atan2(y,x) * 180 / pi) %% 360,sector_center = vapply(angle_deg,nearest_sector_center,numeric(1)),category = ifelse(radius < 0.1,"conserved_mC",vapply(sector_center,sector_to_class,character(1))),category = factor(category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")))
-  
-  dt <- left_join(dt,Reg_Class,by = "gene_id")
-  
-  df_tab <- as.data.frame(prop.table(table(dt$category.x,dt$category.y),margin = 2) * 100)
-  names(df_tab) <- c("x_cat","y_cat","n")
-  df_tab$n <- round(df_tab$n,1)
-  
-  fwrite( dt[!is.na(dt[[20]]) & !is.na(dt[[21]]), c(1:11, 20:21), with = FALSE], file = paste0("Methylation_Regulatory_", context, "_cds.txt"), sep = "\t" )
-  
-  p_tab <- ggplot(df_tab,aes(x = y_cat,y = x_cat,fill = n)) +
-    geom_tile() +
-    geom_text(aes(label = n)) +
-    scale_fill_gradient(low = "white",high = "steelblue") +
-    scale_x_discrete(labels = ital_words) +
-    scale_y_discrete(labels = ital_words) +
-    labs(y = "Methylation classification",x = "Regulatory classification",fill = "Percentage",title = "") +
-    theme_minimal(base_size = 12) +
-    ggtitle(paste("n=",sum(table(dt$category.x,dt$category.y)),sep = "")) +
-    theme(axis.text.x = ggtext::element_markdown(angle = 30,hjust = 1),axis.text.y = ggtext::element_markdown())
-  
-  ggsave(filename = paste0("Methylation_Regulatory_heatmap_",context,"_cds.pdf"),plot = p_tab,width = 4.5,height = 3,device = cairo_pdf)
-}
-
-run_methylation_classification("merged_CG_symmetric_CDS.txt.gz","cg",remove_col3 = FALSE)
-run_methylation_classification("merged_CHG_symmetric_CDS.txt.gz","chg",remove_col3 = FALSE)
-run_methylation_classification("merged_CHH_all_CDS.txt.gz","chh",remove_col3 = TRUE)
-
-run_methylation_classification <- function(infile,context,remove_col3 = FALSE) {
-  dt <- fread(infile)
-  
-  if (remove_col3) {
-    dt <- dt[,-3]
-  }
-  
-  dt <- dt %>%
-    mutate(meth_CS = round((pct_CS / 100) * cov_CS),meth_CSxP = round((pct_CSxP / 100) * cov_CSxP),meth_P = round((pct_P / 100) * cov_P),site_CS = cov_CS > 0,site_CSxP = cov_CSxP > 0,site_P = cov_P > 0) %>%
-    group_by(gene_id) %>%
-    summarise(meth_CS = sum(meth_CS,na.rm = TRUE),cov_CS = sum(cov_CS,na.rm = TRUE),site_CS = sum(site_CS,na.rm = TRUE),meth_CSxP = sum(meth_CSxP,na.rm = TRUE),cov_CSxP = sum(cov_CSxP,na.rm = TRUE),site_CSxP = sum(site_CSxP,na.rm = TRUE),meth_P = sum(meth_P,na.rm = TRUE),cov_P = sum(cov_P,na.rm = TRUE),site_P = sum(site_P,na.rm = TRUE),.groups = "drop") %>%
-    mutate(pct_CS = 100 * meth_CS / cov_CS,pct_CSxP = 100 * meth_CSxP / cov_CSxP,pct_P = 100 * meth_P / cov_P) %>%
-    filter(cov_CS > 10,cov_CSxP > 10,cov_P > 10,site_CS >= 5,site_CSxP >= 5,site_P >= 5) %>%
-    mutate(subgenome = sub("^TraesCS[0-9]+([ABD]).*","\\1",gene_id),subgenome = factor(subgenome,levels = c("A","B","D"))) %>%
-    filter(subgenome %in% c("A","B","D")) %>%
-    mutate(A = pct_CS / 100,H = pct_CSxP / 100,B = pct_P / 100,x = H - A,y = H - B,radius = sqrt(x^2 + y^2),angle_deg = (atan2(y,x) * 180 / pi) %% 360,sector_center = vapply(angle_deg,nearest_sector_center,numeric(1)),category = ifelse(radius < 0.1,"conserved_mC",vapply(sector_center,sector_to_class,character(1))),category = factor(category,levels = c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")))
-  
-  dt <- left_join(dt,Reg_Class,by = "gene_id")
-  fwrite( dt[!is.na(dt[[20]]) & !is.na(dt[[21]]), c(1:11, 20:21), with = FALSE], file = paste0("Methylation_Regulatory_", context, "_promoter.txt"), sep = "\t" )
-  
-  df_tab <- as.data.frame(prop.table(table(dt$category.x,dt$category.y),margin = 2) * 100)
-  names(df_tab) <- c("x_cat","y_cat","n")
-  df_tab$n <- round(df_tab$n,1)
-  
-  p_tab <- ggplot(df_tab,aes(x = y_cat,y = x_cat,fill = n)) +
-    geom_tile() +
-    geom_text(aes(label = n)) +
-    scale_fill_gradient(low = "white",high = "steelblue") +
-    scale_x_discrete(labels = ital_words) +
-    scale_y_discrete(labels = ital_words) +
-    labs(y = "Methylation classification",x = "Regulatory classification",fill = "Percentage",title = "") +
-    theme_minimal(base_size = 12) +
-    ggtitle(paste("n=",sum(table(dt$category.x,dt$category.y)),sep = "")) +
-    theme(axis.text.x = ggtext::element_markdown(angle = 30,hjust = 1),axis.text.y = ggtext::element_markdown())
-  
-  ggsave(filename = paste0("Methylation_Regulatory_heatmap_",context,"_promoter.pdf"),plot = p_tab,width = 4.5,height = 3,device = cairo_pdf)
-}
-
-run_methylation_classification("merged_CG_symmetric_promoter1kb.txt.gz","cg",remove_col3 = FALSE)
-run_methylation_classification("merged_CHG_symmetric_promoter1kb.txt.gz","chg",remove_col3 = FALSE)
-run_methylation_classification("merged_CHH_promoter1kb.txt.gz","chh",remove_col3 = TRUE)
 
 ## methylation inheritance classification by chromatin states
 

@@ -89,38 +89,6 @@ ggplot(plot_dt, aes(x = hybrid_status, y = parent_status, fill = N)) +
   theme(panel.grid = element_blank(),strip.background = element_rect(fill = "white", colour = "black"),axis.text.x = element_text(angle = 45, hjust = 1),axis.title = element_text(face = "bold"))
 dev.off()
 
-# classify gbM by gene regulatory classes
-Reg_Class <- read.csv("classified_all.csv", header = TRUE)
-Reg_Class <- Reg_Class[!Reg_Class$category %in% "Ambiguous", ]
-colnames(Reg_Class)[1] <- "gene_id"
-
-gbm_status_reg <- inner_join(gbm_status,Reg_Class,by="gene_id")
-write.csv(gbm_status_reg,file="gbM_by_regulatory_state.csv",row.names = F)
-
-plot_dt <- gbm_status_reg %>%
-  group_by(category, parent_status, hybrid_status) %>%
-  summarise(N = n(), .groups = "drop")
-plot_dt$subgenome <- factor(plot_dt$category)
-plot_dt$parent_status <- factor(plot_dt$parent_status,levels = c("gbM in both parents", "CS-specific gbM", "P-specific gbM", "non-gbM in both parents"))
-plot_dt$hybrid_status <- factor(plot_dt$hybrid_status,levels = c("gbM", "non-gbM"))
-
-plot_dt$category_label <- plot_dt$category
-
-plot_dt$category_label <- gsub("Cis", "italic('Cis')", plot_dt$category_label)
-plot_dt$category_label <- gsub("Trans", "italic('Trans')", plot_dt$category_label)
-plot_dt$category_label <- gsub(" only", "~only", plot_dt$category_label)
-plot_dt$category_label <- gsub(" \\+ ", "~'+'~", plot_dt$category_label)
-
-pdf(file="gbM_parents_hybrid_reg_class.pdf",height=3,width=7.5)
-ggplot(plot_dt, aes(x = hybrid_status, y = parent_status, fill = N)) +
-  geom_tile(colour = "white", linewidth = 0.5) +
-  geom_text(aes(label = comma(N)), size = 3) +
-  facet_wrap(~category_label, nrow = 1, labeller = label_parsed) +
-  scale_fill_gradient(low = "white", high = "#0072B2", labels = comma) +
-  labs(x = "Hybrid", y = NULL, fill = "Number of Genes") +
-  theme_bw(base_size = 12) +
-  theme(panel.grid = element_blank(),strip.background = element_rect(fill = "white", colour = "black"),axis.text.x = element_text(angle = 45, hjust = 1),axis.title = element_text(face = "bold"))
-dev.off()
 
 ## gbM by expression level
 library(data.table)
