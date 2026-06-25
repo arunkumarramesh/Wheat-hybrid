@@ -246,7 +246,7 @@ Rscript gene_chh_te.R
 wget -c https://urgi.versailles.inrae.fr/download/iwgsc/IWGSC_RefSeq_Annotations/v1.1/iwgsc_refseqv1.1_rnaseq_mapping_2017July20.zip
 ```
 
-27. Obtain methylation for core, shell, and cloud genes as defined in https://doi.org/10.1038/s41467-025-64046-1
+27. Obtain methylation for seedling-specific and broadly expressed genes. Also for shell and cloud genes as defined in https://doi.org/10.1038/s41467-025-64046-1
 ```
  ./bed_intervals_shell_core.sh
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b CDS_shell.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_CDS_shell.txt.gz
