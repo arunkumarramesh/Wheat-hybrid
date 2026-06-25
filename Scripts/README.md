@@ -236,7 +236,9 @@ sed -i 's/Chr/chr/' TEs.bed
 
 Rscript gene_cg_te.R
 Rscript gene_chg_te.R
-Rscript gene_chh_te.R 
+Rscript gene_chh_te.R
+
+cut -f 16-18 TEs.bed | awk '$3 < 1000' | awk '{key=$1"\t"$2; count[key]++} END{for (key in count) print key, count[key]}' > TEs_gene.txt
 ```
 
 25. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R),[`boman_classification_snp.R`](./boman_classification_snp.R), [`gbM_wheat.R`](./gbM_wheat.R), and [`te_meth.R`](./te_meth.R)
