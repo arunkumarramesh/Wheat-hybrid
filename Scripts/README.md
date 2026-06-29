@@ -244,7 +244,7 @@ cut -f 16-18 TEs.bed | awk '$3 < 1000' | awk '{key=$1"\t"$2; count[key]++} END{f
 25. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R),[`boman_classification_snp.R`](./boman_classification_snp.R), [`gbM_wheat.R`](./gbM_wheat.R), and [`te_meth.R`](./te_meth.R)
 
 
-26. Obtain methylation for shell and cloud genes as defined in https://doi.org/10.1038/s41467-025-64046-1. Also for transgressive, dominant and non-DE genes (can be done more simply by subsetting in the future).
+26. Obtain methylation for for transgressive, dominant and non-DE genes (can be done more simply by subsetting in the future).
 ```
  ./bed_intervals_shell_core.sh
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b CDS_transgressive.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_CDS_transgressive.txt.gz
