@@ -148,7 +148,7 @@ DGEgenes_CS_PvP <- rownames(top.table[top.table$adj.P.Val < 0.05 & top.table$log
 
 upset_df <- data.frame(gene = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))), `Hybrid v. Midparent` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvCSxP)), `Hybrid v. CS` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvCS)), `Hybrid v. Paragon` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvP)), check.names = FALSE)
 pdf("Hybrid_vParent_diff_up.pdf",height=3,width=5.3)
-upset(upset_df, c("Hybrid v. Midparent", "Hybrid v. CS", "Hybrid v. Paragon"), set_sizes = FALSE, name = "DE Comparison", base_annotations = list("Intersection size" = intersection_size(counts = TRUE, text_mapping = aes(label = !!upset_text_percentage(digits = 1)))  + labs(y = "Number of genes", title = NULL)))
+upset(upset_df, c("Hybrid v. Midparent", "Hybrid v. CS", "Hybrid v. Paragon"), set_sizes = FALSE, name = "DE Comparison", base_annotations = list("Intersection size" = intersection_size(counts = TRUE, text_mapping = aes(label = !!upset_text_percentage(digits = 1)))  + labs(y = "Number of genes", title = "Upregulated")))
 dev.off()
 
 transgressive <- upset_df$gene[upset_df[["Hybrid v. Midparent"]] & upset_df[["Hybrid v. CS"]] & upset_df[["Hybrid v. Paragon"]]]
@@ -167,7 +167,7 @@ DGEgenes_CS_PvP <- rownames(top.table[top.table$adj.P.Val < 0.05 & top.table$log
 upset_df2 <- data.frame(gene = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))), `Hybrid v. Midparent` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvCSxP)), `Hybrid v. CS` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvCS)), `Hybrid v. Paragon` = unique(c(unique(na.omit(DGEgenes_CS_PvCSxP)), unique(na.omit(DGEgenes_CS_PvCS)), unique(na.omit(DGEgenes_CS_PvP)))) %in% unique(na.omit(DGEgenes_CS_PvP)), check.names = FALSE)
 
 pdf("Hybrid_vParent_diff_down.pdf",height=3,width=5.3)
-upset(upset_df2, c("Hybrid v. Midparent", "Hybrid v. CS", "Hybrid v. Paragon"), set_sizes = FALSE, name = "DE Comparison", base_annotations = list("Intersection size" = intersection_size(counts = TRUE, text_mapping = aes(label = !!upset_text_percentage(digits = 1)))  + labs(y = "Number of genes", title = NULL)))
+upset(upset_df2, c("Hybrid v. Midparent", "Hybrid v. CS", "Hybrid v. Paragon"), set_sizes = FALSE, name = "DE Comparison", base_annotations = list("Intersection size" = intersection_size(counts = TRUE, text_mapping = aes(label = !!upset_text_percentage(digits = 1)))  + labs(y = "Number of genes", title = "Downregulated")))
 dev.off()
 
 transgressive2 <- upset_df2$gene[upset_df2[["Hybrid v. Midparent"]] & upset_df2[["Hybrid v. CS"]] & upset_df2[["Hybrid v. Paragon"]]]
