@@ -153,7 +153,7 @@ dev.off()
 ## first testing if ref counts for reciprocal hybrids differ
 
 total_counts <- hybrid_counts[,1:5] + hybrid_counts[,6:10]
-keep <- rowSums(cpm(DGEList(total_counts)) >= 2) >= 2
+keep <- rowSums(cpm(DGEList(total_counts)) >= 2) >= 4
 dge <- DGEList(counts = hybrid_counts[keep,])
 nf <- calcNormFactors(DGEList(counts = total_counts[keep,]), method = "TMM")
 dge$samples$lib.size <- rep(nf$samples$lib.size, 2)
