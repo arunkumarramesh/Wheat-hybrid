@@ -759,174 +759,6 @@ b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) 
 
 ggsave(filename = "boman_class_geometric_chh.png",plot = plot_grid(a_plot, b_plot, ncol=2),width = 10,height = 3,units = "in",dpi = 300,device = ragg::agg_png,bg = "white")
 
-library(data.table)
-library(ggplot2)
-library(cowplot)
-library(ragg)
-
-dt <- fread("merged_CHG_symmetric_CDS.txt.gz")
-
-dt <- dt[cov_CS > 10 & cov_CSxP > 10 & cov_P > 10]
-
-dt$subgenome <- sub("^chr[0-9]+([ABD])$", "\\1", dt$chr)
-dt <- dt[subgenome %in% c("A", "B", "D")]
-dt$subgenome <- factor(dt$subgenome, levels = c("A", "B", "D"))
-
-dt$A <- dt$pct_CS / 100
-dt$H <- dt$pct_CSxP / 100
-dt$B <- dt$pct_P / 100
-
-dt$x <- dt$H - dt$A
-dt$y <- dt$H - dt$B
-dt$radius <- sqrt(dt$x^2 + dt$y^2)
-dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
-
-circ_dist <- function(a, b) {
-  d <- abs(a - b)
-  pmin(d, 360 - d)
-}
-
-nearest_sector_center <- function(angle_deg) {
-  centers <- c(0, 45, 90, 135, 180, 225, 270, 315)
-  centers[which.min(circ_dist(angle_deg, centers))]
-}
-
-sector_to_class <- function(sector_center) {
-  if (sector_center %in% c(0, 180)) {
-    "P_dominant"
-  } else if (sector_center %in% c(90, 270)) {
-    "CS_dominant"
-  } else if (sector_center %in% c(135, 315)) {
-    "additive"
-  } else if (sector_center == 45) {
-    "overdominant"
-  } else if (sector_center == 225) {
-    "underdominant"
-  } else {
-    NA_character_
-  }
-}
-
-dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
-dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
-dt <- dt[max_mC >= 0.1]
-dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
-category_levels <- c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")
-dt$category <- factor(dt$category, levels = category_levels)
-
-
-cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#0072B2", P_dominant = "#CC79A7", overdominant = "#E69F00", underdominant = "#1B7837")
-
-category_counts <- dt %>% 
-  count(category) %>% 
-  mutate(percentage = n / sum(n) * 100) %>% 
-  mutate(label = paste0(category, " (", round(percentage, 2), "%)"))
-
-legend_labels <- setNames(category_counts$label, category_counts$category)
-
-a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
-  geom_point(aes(color = category), size = 1, alpha = 1) +
-  geom_abline(intercept = 0, slope = tan(c(1, 3, 5, 7) * pi / 8), color = "gray70", linetype = "dotted") +
-  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
-  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
-  scale_color_manual(values = cat_cols) + 
-  labs(x = "Mean CSxP - P methylation %", y = "Mean CSxP - CS methylation %",color = "") +
-  theme_minimal(base_size = 12) +
-  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
-
-b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) ) +
-  geom_point(aes(color = category), size = 1, alpha = 1) +
-  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
-  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
-  scale_color_manual(values = cat_cols) + 
-  labs(x = "Mean CS - P methylation %", y = "Mean CSxP - MPV methylation %",color = "") +
-  theme_minimal(base_size = 12) +
-  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
-
-ggsave(filename = "boman_class_geometric_chg.png",plot = plot_grid(a_plot, b_plot, ncol=2),width = 10,height = 3,units = "in",dpi = 300,device = ragg::agg_png,bg = "white")
-
-
-
-dt <- fread("merged_CHH_all_CDS.txt.gz")
-dt <- dt[cov_CS > 10 & cov_CSxP > 10 & cov_P > 10]
-
-dt$subgenome <- sub("^chr[0-9]+([ABD])$", "\\1", dt$chr)
-dt <- dt[subgenome %in% c("A", "B", "D")]
-dt$subgenome <- factor(dt$subgenome, levels = c("A", "B", "D"))
-
-dt$A <- dt$pct_CS / 100
-dt$H <- dt$pct_CSxP / 100
-dt$B <- dt$pct_P / 100
-
-dt$x <- dt$H - dt$A
-dt$y <- dt$H - dt$B
-dt$radius <- sqrt(dt$x^2 + dt$y^2)
-dt$angle_deg <- (atan2(dt$y, dt$x) * 180 / pi) %% 360
-
-circ_dist <- function(a, b) {
-  d <- abs(a - b)
-  pmin(d, 360 - d)
-}
-
-nearest_sector_center <- function(angle_deg) {
-  centers <- c(0, 45, 90, 135, 180, 225, 270, 315)
-  centers[which.min(circ_dist(angle_deg, centers))]
-}
-
-sector_to_class <- function(sector_center) {
-  if (sector_center %in% c(0, 180)) {
-    "P_dominant"
-  } else if (sector_center %in% c(90, 270)) {
-    "CS_dominant"
-  } else if (sector_center %in% c(135, 315)) {
-    "additive"
-  } else if (sector_center == 45) {
-    "overdominant"
-  } else if (sector_center == 225) {
-    "underdominant"
-  } else {
-    NA_character_
-  }
-}
-
-dt$sector_center <- vapply(dt$angle_deg, nearest_sector_center, numeric(1))
-dt$max_mC <- pmax(dt$A,dt$H,dt$B,na.rm = TRUE)
-dt <- dt[max_mC >= 0.1]
-dt$category <- ifelse(dt$radius < 0.1,"conserved_mC",vapply(dt$sector_center, sector_to_class, character(1)))
-category_levels <- c("conserved_mC","additive","CS_dominant","P_dominant","overdominant","underdominant")
-dt$category <- factor(dt$category, levels = category_levels)
-
-
-cat_cols <- c(conserved_mC = "#1A1A1A", additive = "#D9D9D9", CS_dominant = "#0072B2", P_dominant = "#CC79A7", overdominant = "#E69F00", underdominant = "#1B7837")
-
-category_counts <- dt %>% 
-  count(category) %>% 
-  mutate(percentage = n / sum(n) * 100) %>% 
-  mutate(label = paste0(category, " (", round(percentage, 2), "%)"))
-
-legend_labels <- setNames(category_counts$label, category_counts$category)
-
-a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
-  geom_point(aes(color = category), size = 1, alpha = 1) +
-  geom_abline(intercept = 0, slope = tan(c(1, 3, 5, 7) * pi / 8), color = "gray70", linetype = "dotted") +
-  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
-  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
-  scale_color_manual(values = cat_cols) + 
-  labs(x = "Mean CSxP - P methylation %", y = "Mean CSxP - CS methylation %",color = "") +
-  theme_minimal(base_size = 12) +
-  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
-
-b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) ) +
-  geom_point(aes(color = category), size = 1, alpha = 1) +
-  geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
-  geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
-  scale_color_manual(values = cat_cols) + 
-  labs(x = "Mean CS - P methylation %", y = "Mean CSxP - MPV methylation %",color = "") +
-  theme_minimal(base_size = 12) +
-  theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
-
-ggsave(filename = "boman_class_geometric_chh.png",plot = plot_grid(a_plot, b_plot, ncol=2),width = 10,height = 3,units = "in",dpi = 300,device = ragg::agg_png,bg = "white")
-
 ## expression level by cytosine context
 
 library(data.table)
@@ -1127,7 +959,7 @@ dev.off()
 
 e3 <- function(a1,b1,d1, a2,b2,d2) sqrt((a1 - a2)^2 + (b1 - b2)^2 + (d1 - d2)^2)
 
-meth_bias_df <- function(infile, context_label, remove_col3 = FALSE) {
+meth_bias_df <- function(infile, remove_col3 = FALSE) {
   dt <- fread(infile)
 
   if (remove_col3) {
@@ -1170,11 +1002,11 @@ meth_bias_df <- function(infile, context_label, remove_col3 = FALSE) {
   homologies
 }
 
-meth_bias_cg <- meth_bias_df("merged_CG_symmetric_CDS.txt.gz", "CG")
+meth_bias_cg <- meth_bias_df("merged_CG_symmetric_CDS.txt.gz")
 meth_bias_cg$context <- "CG"
-meth_bias_chg <- meth_bias_df("merged_CHG_symmetric_CDS.txt.gz", "CHG")
+meth_bias_chg <- meth_bias_df("merged_CHG_symmetric_CDS.txt.gz")
 meth_bias_chg$context <- "CHG"
-meth_bias_chh <- meth_bias_df("merged_CHH_all_CDS.txt.gz", "CHH", remove_col3 = TRUE)
+meth_bias_chh <- meth_bias_df("merged_CHH_all_CDS.txt.gz", remove_col3 = TRUE)
 meth_bias_chh$context <- "CHH"
 meth_bias_all <- rbind(meth_bias_cg, meth_bias_chg, meth_bias_chh)
 meth_bias_all$context <- factor(meth_bias_all$context, levels = c("CG", "CHG", "CHH"))
@@ -1199,7 +1031,7 @@ dev.off()
 
 e3 <- function(a1,b1,d1, a2,b2,d2) sqrt((a1 - a2)^2 + (b1 - b2)^2 + (d1 - d2)^2)
 
-meth_bias_df <- function(infile, context_label, remove_col3 = FALSE) {
+meth_bias_df <- function(infile, remove_col3 = FALSE) {
   dt <- fread(infile)
   
   if (remove_col3) {
@@ -1335,4 +1167,3 @@ ggplot(summary_dt, aes(x = category, y = proportion, fill = category)) +
   theme(panel.grid.minor = element_blank(), panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"), strip.background = element_rect(fill = "white", colour = "black"), legend.position = "right", plot.title = element_text(face = "bold"), axis.title = element_text(face = "bold")) +
   theme(axis.text.x = element_text(angle = 35, hjust = 1), legend.position = "none")
 dev.off()
-
