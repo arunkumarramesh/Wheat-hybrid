@@ -235,7 +235,7 @@ sample_full_rows <- function(n_rows, p = NULL, n_cols = 3, trials = 1, seed = NU
 }
 
 # 10000 trials to estimate the distribution
-res2 <- sample_full_rows(n_rows = 6591 , p = 0.407, n_cols = 3, trials = 10000, seed = 123)
+res2 <- sample_full_rows(n_rows = 6591 , p = 0.436, n_cols = 3, trials = 10000, seed = 123)
 mean(res2$full_rows_count)
 
 pdf(file="Number_triads_expected.pdf",height=2.5,width=4)
