@@ -246,7 +246,7 @@ cut -f 16-18 TEs.bed | awk '$3 < 1000' | awk '{key=$1"\t"$2; count[key]++} END{f
 
 26. Obtain methylation for for transgressive, dominant and non-DE genes (can be done more simply by subsetting in the future).
 ```
- ./bed_intervals_shell_core.sh
+ ./bed_intervals_gene.sh
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b CDS_transgressive.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_CDS_transgressive.txt.gz
 zcat merged_CG_symmetric_CDS_transgressive.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp && mv tmp merged_CG_symmetric_CDS_transgressive.txt.gz
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CHG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b CDS_transgressive.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CHG_symmetric_CDS_transgressive.txt.gz
