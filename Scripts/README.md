@@ -63,6 +63,20 @@ cp /projects/wheat/orthofinder_input_2_B/OrthoFinder/Results_Apr24/Orthogroups/S
 cp /projects/wheat/orthofinder_input_2_D/OrthoFinder/Results_Apr24/Orthogroups/SingleCopyOrthologues_matrix_D.tsv .
 cat SingleCopyOrthologues_matrix_A.tsv SingleCopyOrthologues_matrix_B.tsv SingleCopyOrthologues_matrix_D.tsv > SingleCopyOrthologues_matrix.tsv
 
+cd /projects/wheat/orthofinder_input_2_A/OrthoFinder/Results_Jul05_1/Orthologues/Orthologues_iwgsc_refseqv2.1_annotation_200916_HC_mrna_A
+awk -F'\t' 'NR==1 {for (i=1; i<=NF; i++) {if ($i ~ /iwgsc_refseqv2.1_annotation_200916_HC_mrna_A/) iwgsc=i; if ($i ~ /Triticum_aestivum_paragon.GCA949126075v1.cdna.all_A/) paragon=i} next} $iwgsc != "" && $paragon != "" {n=split($iwgsc, genes, /, */); for (j=1; j<=n; j++) {gsub(/\r/,"",genes[j]); gsub(/[[:space:]]+$/,"",genes[j]); sub(/\.[0-9]+$/,"",genes[j]); print genes[j]}}'  iwgsc_refseqv2.1_annotation_200916_HC_mrna_A__v__Triticum_aestivum_paragon.GCA949126075v1.cdna.all_A.tsv >A_CS_Par_match.txt
+cp  A_CS_Par_match.txt ../../../../../
+
+cd /projects/wheat/orthofinder_input_2_B/OrthoFinder/Results_Apr24/Orthologues/Orthologues_iwgsc_refseqv2.1_annotation_200916_HC_mrna_B
+awk -F'\t' 'NR==1 {for (i=1; i<=NF; i++) {if ($i ~ /iwgsc_refseqv2.1_annotation_200916_HC_mrna_B/) iwgsc=i; if ($i ~ /Triticum_aestivum_paragon.GCA949126075v1.cdna.all_B/) paragon=i} next} $iwgsc != "" && $paragon != "" {n=split($iwgsc, genes, /, */); for (j=1; j<=n; j++) {gsub(/\r/,"",genes[j]); gsub(/[[:space:]]+$/,"",genes[j]); sub(/\.[0-9]+$/,"",genes[j]); print genes[j]}}'  iwgsc_refseqv2.1_annotation_200916_HC_mrna_B__v__Triticum_aestivum_paragon.GCA949126075v1.cdna.all_B.tsv  >B_CS_Par_match.txt
+cp  B_CS_Par_match.txt ../../../../../
+
+cd /projects/wheat/orthofinder_input_2_D/OrthoFinder/Results_Apr24/Orthologues/Orthologues_iwgsc_refseqv2.1_annotation_200916_HC_mrna_D
+awk -F'\t' 'NR==1 {for (i=1; i<=NF; i++) {if ($i ~ /iwgsc_refseqv2.1_annotation_200916_HC_mrna_D/) iwgsc=i; if ($i ~ /Triticum_aestivum_paragon.GCA949126075v1.cdna.all_D/) paragon=i} next} $iwgsc != "" && $paragon != "" {n=split($iwgsc, genes, /, */); for (j=1; j<=n; j++) {gsub(/\r/,"",genes[j]); gsub(/[[:space:]]+$/,"",genes[j]); sub(/\.[0-9]+$/,"",genes[j]); print genes[j]}}'  iwgsc_refseqv2.1_annotation_200916_HC_mrna_D__v__Triticum_aestivum_paragon.GCA949126075v1.cdna.all_D.tsv  >D_CS_Par_match.txt
+cp  D_CS_Par_match.txt ../../../../../
+
+cd ../../../../../
+cat A_CS_Par_match.txt B_CS_Par_match.txt D_CS_Par_match.txt >CS_Par_match.txt
 ```
 5. Summarise counts per gene using [`combine_sample_tpm.R`](./combine_sample_tpm.R). Script from Philippa Borrill. 
 
