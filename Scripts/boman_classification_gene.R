@@ -381,7 +381,7 @@ a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
   geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
   geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
   scale_color_manual(values = cat_cols) + 
-  labs(x = "Mean CSxP - P methylation %", y = "Mean CSxP - CS methylation %",color = "") +
+  labs(x = "Mean CSxP - CS methylation %", y = "Mean CSxP - P methylation %",color = "") +
   theme_minimal(base_size = 12) +
   theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
 
