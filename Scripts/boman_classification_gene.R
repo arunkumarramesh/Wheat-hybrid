@@ -381,7 +381,7 @@ a_plot <- ggplot(dt, aes(x = x*100, y = y*100)) +
   geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
   geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
   scale_color_manual(values = cat_cols) + 
-  labs(x = "Mean CSxP - CS methylation %", y = "Mean CSxP - P methylation %",color = "") +
+  labs(x = "CSxP - CS methylation %", y = "CSxP - P methylation %",color = "") +
   theme_minimal(base_size = 12) +
   theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
 
@@ -390,7 +390,7 @@ b_plot <- ggplot(dt, aes(x = (pct_CS-pct_P), y = pct_CSxP - ((pct_CS+pct_P)/2)) 
   geom_hline(yintercept = 0, color = "gray50", linewidth = 0.5) +
   geom_vline(xintercept = 0, color = "gray50", linewidth = 0.5) +
   scale_color_manual(values = cat_cols) + 
-  labs(x = "Mean CS - P methylation %", y = "Mean CSxP - MPV methylation %",color = "") +
+  labs(x = "CS - P methylation %", y = "CSxP - MPV methylation %",color = "") +
   theme_minimal(base_size = 12) +
   theme( plot.title = element_text(face = "bold", hjust = 0.5),plot.subtitle = element_text(size = 10, color = "gray30", hjust = 0.5),legend.position = "right",panel.grid.minor = element_blank())
 
