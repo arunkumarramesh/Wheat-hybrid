@@ -224,36 +224,5 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 #python3 subset_chh_by_cds.py CDS.bed merged_CHH_all.txt.gz merged_CHH_all_CDS.txt.gz
 ```
 
-23. Subset promoter regions (1Kb upstream) from methylation sites. Data available on https://doi.org/10.6084/m9.figshare.32144041.
-```
-(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_promoter1kb.txt.gz
-
-(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CHG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CHG_symmetric_promoter1kb.txt.gz
-
-(printf "chr\tpos\tstrand\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CHH_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b promoter1kb.bed -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$12,$16}') | gzip > merged_CHH_promoter1kb.txt.gz
-
-# old
-# python3 subset_chh_by_cds.py promoter1kb.bed merged_CHH_all.txt.gz merged_CHH_promoter1kb.txt.gz
-```
-24. Subset TE regions from methylation sites. Data available on https://doi.org/10.6084/m9.figshare.32144041.
-```
-## create bed interval file containing coordinates for TE and metadata
-./create_TE_bed.sh
-sed -i 's/Chr/chr/' TEs.bed
-
-./subset_cg_chg_by_tes.sh merged_CG_symmetric_all.txt.gz merged_CG_symmetric_te.txt.gz
-./subset_cg_chg_by_tes.sh merged_CHG_symmetric_all.txt.gz merged_CHG_symmetric_te.txt.gz
-./subset_chh_by_tes.sh merged_CHH_all.txt.gz merged_CHH_te.txt.gz
-
-# old
-# python3 subset_chh_by_tes.py TEs.bed merged_CHH_all.txt.gz merged_CHH_te.txt.gz
-
-Rscript gene_cg_te.R
-Rscript gene_chg_te.R
-Rscript gene_chh_te.R
-
-cut -f 16-18 TEs.bed | awk '$3 < 1000' | awk '{key=$1"\t"$2; count[key]++} END{for (key in count) print key, count[key]}' > TEs_gene.txt
-```
-
-25. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R),[`boman_classification_snp.R`](./boman_classification_snp.R), [`gbM_wheat.R`](./gbM_wheat.R), and [`te_meth.R`](./te_meth.R)
+23. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R),[`boman_classification_snp.R`](./boman_classification_snp.R), [`gbM_wheat.R`](./gbM_wheat.R), and [`te_meth.R`](./te_meth.R)
 
