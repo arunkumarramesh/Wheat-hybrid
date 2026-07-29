@@ -163,48 +163,28 @@ awk 'BEGIN{FS=OFS="\t"} NR==FNR{c[$1]=$4; o[$1]=$5; next} FNR==1{print; next} {$
 
 ```
 
-18. Identify C/T differences between CS and Paragon reference genomes. Whole genome alignments from Ensembl Plants
+18. Identify SNPs differences between CS and Paragon reference genomes. Whole genome alignments from Ensembl Plants
 ```
 cd taes_iwgsc.v.tapa_gca949126075v1.lastz_net/
 for file in taes*.maf; do python3 maf_snps_cs_paragon.py $file >${file/.maf/_snps.txt}; done
 cat *_snps.txt | sed '/cs_src/d' > ../cs_par_snps.txt
-awk '($4=="C"&&$5=="T")||($4=="T"&&$5=="C"){chr=$1;sub(/^triticum_aestivum\./,"chr",chr);print chr,$2,$3}' OFS="\t" cs_par_snps.txt > ct_snps.bed
+awk 'BEGIN{FS=OFS="\t"} $2~/^[0-9]+$/ && $3~/^[0-9]+$/ && $3==$2+1{chr=$1; sub(/^triticum_aestivum\./,"chr",chr); print chr,$2,$3}' cs_par_snps.txt | LC_ALL=C sort -k1,1 -k2,2n -k3,3n -u > cs_par_all_snps.bed
 
 ```
 
-19. Obtain v1 genome coordinates for gene rich (states 1-4) and TE rich, H3K9me2	Intergenic region (state 13) from Li et al 2019 https://doi.org/10.1186/s13059-019-1746-8
+20. Remove methylation sites with SNPs between CS and Paragon reference genomes. The classify sites based on inheritance categories. Classification scheme based on scripts developed by Asena: https://github.com/AsenaArdaman/Hybrid_inheritance_models.
 ```
-wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state1.txt
-wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state2.txt
-wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state3.txt
-wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state4.txt
-wget http://bioinfo.cemps.ac.cn/CSCS/bin/State_file/segments_for_each_state/state13.txt
-cat state1.txt state2.txt state3.txt state4.txt | sed  -e '/region/d' -e '/chrom/d' | cut -f 6-8 | sed 's/$/\t1-4/' > state1-4.txt 
-sed  -e '/region/d' -e '/chrom/d' state13.txt | cut -f 6-8 | sed 's/$/\t13/' > state13_2.txt
-cat state1-4.txt  state13_2.txt >chromatin_states.txt
-```
+(zcat merged_CG_symmetric_fullchr.txt.gz | head -n 1; zcat merged_CG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2+1,$0}' | bedtools intersect -sorted -a - -b cs_par_all_snps.bed -v | cut -f4-) | gzip -c > merged_CG_symmetric_all.txt.gz
 
-20. Remove methylation sites with C/T differences between CS and Paragon reference genomes. The classify sites based on inheritance categories. Classification scheme based on scripts developed by Asena: https://github.com/AsenaArdaman/Hybrid_inheritance_models.
-```
-(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CG_symmetric_all.txt.gz
-(printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\n"; zcat merged_CHG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b ct_snps.bed -v | cut -f4-) | gzip > merged_CHG_symmetric_all.txt.gz
-awk 'BEGIN{OFS="\t"} {print $1, $2+1}' ct_snps.bed > ct_snps.pos.txt
-awk 'BEGIN{FS=OFS="\t"} NR==FNR{a[$1 FS $2]; next} FNR==1 || !(($1 FS $2) in a)' ct_snps.pos.txt <(zcat merged_CHH_fullchr.txt.gz) | gzip > merged_CHH_all.txt.gz
-awk -v W=50000 '{s=int($2/W)*W; c[$1,s,s+W]++} END{for(i in c){split(i,a,SUBSEP); print a[1],a[2],a[3],c[i]}}' OFS="\t" cs_par_snps.txt | sort -k1,1 -k2,2n > cs_par_snps_50kb_counts.tsv
+(zcat merged_CHG_symmetric_fullchr.txt.gz | head -n 1; zcat merged_CHG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2+2,$0}' | bedtools intersect -sorted -a - -b cs_par_all_snps.bed -v | cut -f4-) | gzip -c > merged_CHG_symmetric_all.txt.gz
+
+(zcat merged_CHH_fullchr.txt.gz | head -n 1; zcat merged_CHH_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{line=$0;gsub(/\t/,"|",line);if($3=="+"){print $1,$2-1,$2+2,line}else if($3=="-"){start=$2-3;if(start<0)start=0;print $1,start,$2,line}}' | LC_ALL=C sort -S 2G -T "${SLURM_TMPDIR:-.}" -k1,1 -k2,2n -k3,3n | bedtools intersect -sorted -a - -b cs_par_all_snps.bed -v | cut -f4 | tr '|' '\t') | gzip -c > merged_CHH_all.txt.gz
+
 
 Rscript boman_classification_cg.R
 Rscript boman_classification_chg.R
 Rscript boman_classification_chh.R
 
-## reclassify for those with high and low SNV density
-Rscript boman_classification_snp_cg.R
-Rscript boman_classification_snp_chg.R
-Rscript boman_classification_snp_chh.R
-
-## reclassify for those in different gene rich and TE rich chromatin intervals
-boman_classification_chromatin_cg.R
-boman_classification_chromatin_chg.R
-boman_classification_chromatin_chh.R
 ```
 
 21. Convert IWGSC v1.1 gene annotation into BED files for CDS for the longest transcript and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs using [`bed_intervals.sh`](./bed_intervals.sh)
