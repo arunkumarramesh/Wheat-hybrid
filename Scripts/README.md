@@ -178,8 +178,7 @@ awk 'BEGIN{FS=OFS="\t"} $2~/^[0-9]+$/ && $3~/^[0-9]+$/ && $3==$2+1{chr=$1; sub(/
 
 (zcat merged_CHG_symmetric_fullchr.txt.gz | head -n 1; zcat merged_CHG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2+2,$0}' | bedtools intersect -sorted -a - -b cs_par_all_snps.bed -v | cut -f4-) | gzip -c > merged_CHG_symmetric_all.txt.gz
 
-(zcat merged_CHH_fullchr.txt.gz | head -n 1; zcat merged_CHH_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{line=$0;gsub(/\t/,"|",line);if($3=="+"){print $1,$2-1,$2+2,line}else if($3=="-"){start=$2-3;if(start<0)start=0;print $1,start,$2,line}}' | LC_ALL=C sort -S 2G -T "${SLURM_TMPDIR:-.}" -k1,1 -k2,2n -k3,3n | bedtools intersect -sorted -a - -b cs_par_all_snps.bed -v | cut -f4 | tr '|' '\t') | gzip -c > merged_CHH_all.txt.gz
-
+python3 remove_CHH_snps.py
 
 Rscript boman_classification_cg.R
 Rscript boman_classification_chg.R
