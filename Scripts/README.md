@@ -204,5 +204,5 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 #python3 subset_chh_by_cds.py CDS.bed merged_CHH_all.txt.gz merged_CHH_all_CDS.txt.gz
 ```
 
-23. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R),[`boman_classification_snp.R`](./boman_classification_snp.R), [`gbM_wheat.R`](./gbM_wheat.R)
+23. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R) and [`gbM_wheat.R`](./gbM_wheat.R)
 
