@@ -231,19 +231,6 @@ write.table(nonDE,file="nonDE_genes.txt",quote=FALSE,row.names=FALSE,col.names=F
 
 c(transgressive=length(transgressive),dominant=length(dominant),additive=length(additive),nonDE=length(nonDE))
 
-transgressive_v11 <- map_unique$v11[match(c(transgressive,transgressive2), map_unique$v21)] 
-transgressive_v11 <- transgressive_v11[!is.na(transgressive_v11)]
-write.table(transgressive_v11, file="transgressive_v1.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
-dominant_v11 <- map_unique$v11[match(c(dominant,dominant2), map_unique$v21)] 
-dominant_v11 <- dominant_v11[!is.na(dominant_v11)]
-write.table(dominant_v11, file="dominant_v1.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
-additive_v11 <- map_unique$v11[match(c(additive,additive2), map_unique$v21)] 
-additive_v11 <- additive_v11[!is.na(additive_v11)]
-write.table(additive_v11, file="additive_v1.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
-nonde_v11 <- map_unique$v11[match(rownames(top.table)[!rownames(top.table) %in% unique(c(upset_df_new$gene, upset_df_new$gene))], map_unique$v21)]
-nonde_v11 <- nonde_v11[!is.na(nonde_v11)]
-write.table(nonde_v11, file="nonde_v1.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
-
 cpm_log <- cpm(edgeR.DGElist,log=TRUE)
 cpm_nolog <- cpm(edgeR.DGElist,log=FALSE)
 colnames(cpm_log) <- sub("_.*","",colnames(cpm_log))
@@ -310,7 +297,7 @@ sig_CSvP_A <- rownames(all.CSvP_A)[all.CSvP_A$adj.P.Val<0.05 & abs(all.CSvP_A$lo
 sig_PvH_A <- rownames(all.CS_PvCSxP_A)[all.CS_PvCSxP_A$adj.P.Val<0.05 & abs(all.CS_PvCSxP_A$logFC)>1]
 total_A_genes <- length(intersect(rownames(all.CSvP_A),rownames(all.CS_PvCSxP_A)))
 
-vennfit <- euler(c("CS vs Paragon"=length(sig_CSvP_A),"Parents vs Hybrids"=length(sig_PvH_A),"CS vs Paragon&Parents vs Hybrids"=length(intersect(sig_CSvP_A,sig_PvH_A))))
+vennfit <- euler(list( `CS vs Paragon`=sig_CSvP_A, `Parents vs Hybrids`=sig_PvH_A ))
 
 pdf("venn_A_subgenome.pdf",height=3,width=4)
 plot(vennfit,quantities=TRUE,legend=TRUE,main=paste0("A=",total_A_genes,sep=""),fills=c("#0072B2","#E69F00"))
@@ -324,7 +311,7 @@ sig_CSvP_B <- rownames(all.CSvP_B)[all.CSvP_B$adj.P.Val<0.05 & abs(all.CSvP_B$lo
 sig_PvH_B <- rownames(all.CS_PvCSxP_B)[all.CS_PvCSxP_B$adj.P.Val<0.05 & abs(all.CS_PvCSxP_B$logFC)>1]
 total_B_genes <- length(intersect(rownames(all.CSvP_B),rownames(all.CS_PvCSxP_B)))
 
-vennfit <- euler(c("CS vs Paragon"=length(sig_CSvP_B),"Parents vs Hybrids"=length(sig_PvH_B),"CS vs Paragon&Parents vs Hybrids"=length(intersect(sig_CSvP_B,sig_PvH_B))))
+vennfit <- euler(list( `CS vs Paragon`=sig_CSvP_B, `Parents vs Hybrids`=sig_PvH_B ))
 
 pdf("venn_B_subgenome.pdf",height=3,width=4)
 plot(vennfit,quantities=TRUE,legend=TRUE,main=paste0("B=",total_B_genes,sep=""),fills=c("#0072B2","#E69F00"))
@@ -338,7 +325,7 @@ sig_CSvP_D <- rownames(all.CSvP_D)[all.CSvP_D$adj.P.Val<0.05 & abs(all.CSvP_D$lo
 sig_PvH_D <- rownames(all.CS_PvCSxP_D)[all.CS_PvCSxP_D$adj.P.Val<0.05 & abs(all.CS_PvCSxP_D$logFC)>1]
 total_D_genes <- length(intersect(rownames(all.CSvP_D),rownames(all.CS_PvCSxP_D)))
 
-vennfit <- euler(c("CS vs Paragon"=length(sig_CSvP_D),"Parents vs Hybrids"=length(sig_PvH_D),"CS vs Paragon&Parents vs Hybrids"=length(intersect(sig_CSvP_D,sig_PvH_D))))
+vennfit <- euler(list( `CS vs Paragon`=sig_CSvP_D, `Parents vs Hybrids`=sig_PvH_D ))
 
 pdf("venn_D_subgenome.pdf",height=3,width=4)
 plot(vennfit,quantities=TRUE,legend=TRUE,main=paste0("D=",total_D_genes,sep=""),fills=c("#0072B2","#E69F00"))

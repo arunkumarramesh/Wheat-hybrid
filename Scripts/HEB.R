@@ -116,9 +116,9 @@ combo_counts_mod_2 <- combo_counts %>%
 combo_counts_mod_2$Direction <- "Paragon"
 combo_counts_mod <- rbind(combo_counts_mod_1,combo_counts_mod_2)
 
-total_n    <- sum(combo_counts$Number_DE_homoeologs, na.rm = TRUE)
-non_none_n <- sum(combo_counts_mod$Number_DE_homoeologs, na.rm = TRUE)
-pct_non    <- 100 * non_none_n / total_n
+total_n <- nrow(hits)
+non_none_n <- sum(hits$n_hits > 0 | hits2$n_hits > 0)
+pct_non <- 100*non_none_n/total_n
 
 combo_counts_mod_plot <- ggplot(combo_counts_mod,
        aes(x = Subgenome, y = Number_DE_homoeologs, fill = Direction)) +
@@ -183,9 +183,9 @@ combo_counts_mod_2 <- combo_counts %>%
 combo_counts_mod_2$Direction <- "Parents"
 combo_counts_mod_hybrid <- rbind(combo_counts_mod_1,combo_counts_mod_2)
 
-total_n_hybrid    <- sum(combo_counts$Number_DE_homoeologs, na.rm = TRUE)
-non_none_n_hybrid <- sum(combo_counts_mod_hybrid$Number_DE_homoeologs, na.rm = TRUE)
-pct_non_hybrid    <- 100 * non_none_n_hybrid / total_n_hybrid
+total_n_hybrid <- nrow(hits)
+non_none_n_hybrid <- sum(hits$n_hits > 0 | hits2$n_hits > 0)
+pct_non_hybrid <- 100*non_none_n_hybrid/total_n_hybrid
 
 combo_counts_mod_hybrid_plot <- ggplot(combo_counts_mod_hybrid,aes(x = Subgenome, y = Number_DE_homoeologs, fill = Direction)) +
   geom_col(position = position_dodge(width = 0.8), width = 0.7) +
@@ -261,7 +261,13 @@ bc2 <- bc2 %>%
   mutate(dist_to_CS = ifelse(!is_cs_rep(sample) & !is_p_rep(sample) & !is.na(A_cs),e3(A, B, D, A_cs, B_cs, D_cs),NA_real_))
 bc2 <- bc2 %>%
   mutate(dist_to_P = ifelse(!is_cs_rep(sample) & !is_p_rep(sample) & !is.na(A_p),e3(A, B, D, A_p, B_p, D_p),NA_real_))
-bc2 <- left_join(bc2,hits[c(4,14)],by="group_id")
+hit_summary <- hits %>%
+  select(group_id,n_up=n_hits) %>%
+  inner_join(hits2 %>% select(group_id,n_down=n_hits),by="group_id") %>%
+  mutate(n_hits=n_up+n_down) %>%
+  select(group_id,n_hits)
+
+bc2 <- left_join(bc2,hit_summary,by="group_id")
 
 
 library(ggpointdensity)

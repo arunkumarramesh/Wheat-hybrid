@@ -4,6 +4,7 @@ library(limma)
 library(ComplexHeatmap)
 library(ggplot2)
 library(scales)
+library(cowplot)
 
 ## get list of core genes
 library(dplyr)
@@ -245,7 +246,7 @@ fisher_all_genes <- asetest_pvals_sub %>%
   inner_join(fisher_T_results[c("gene","T")],by="gene")
 
 fisher_classified <- fisher_all_genes %>%
-  mutate(p_sign=sign(P_FC),h_sign=sign(H_FC),category=case_when(P & H & !T ~ "Cis only",P & !H & T ~ "Trans only",P & H & T & p_sign == h_sign ~ "Cis + trans",P & H & T & p_sign != h_sign ~ "Cis × trans",!P & H & T ~ "Compensatory",!P & !H & !T ~ "Conserved",TRUE ~ "Ambiguous"))
+  mutate(T_FC=P_FC-H_FC,h_sign=sign(H_FC),t_sign=sign(T_FC),category=case_when(P & H & !T ~ "Cis only",P & !H & T ~ "Trans only",P & H & T & h_sign == t_sign ~ "Cis + trans",P & H & T & h_sign != t_sign ~ "Cis × trans",!P & H & T ~ "Compensatory",!P & !H & !T ~ "Conserved",TRUE ~ "Ambiguous"))
 
 fisher_classified$category <- factor(fisher_classified$category,levels=category_levels)
 
@@ -315,7 +316,7 @@ for (sample_name in barley_hybrid_samples[-1]) {
 
 barley_voom <- voom(barley_dge,barley_design,plot=FALSE)
 barley_fit <- lmFit(barley_voom,barley_design)
-barley_fit <- contrasts.fit(barley_fit,makeContrasts(T=(Parent_CS-Parent_Par)-(Hybrid_CS-Hybrid_Par),levels=barley_design))
+barley_fit <- contrasts.fit(barley_fit,makeContrasts(T=(Parent_Par-Parent_CS)-(Hybrid_Par-Hybrid_CS),levels=barley_design))
 barley_fit <- eBayes(barley_fit)
 
 barley_T_results <- topTable(barley_fit,coef="T",sort.by="none",n=Inf,p.value=1,lfc=0)
@@ -327,7 +328,7 @@ barley_all_genes <- asetest_pvals_sub %>%
   inner_join(barley_T_results,by="gene")
 
 barley_classified <- barley_all_genes %>%
-  mutate(p_sign=sign(P_FC),h_sign=sign(H_FC),category=case_when(P & H & !T ~ "Cis only",P & !H & T ~ "Trans only",P & H & T & p_sign == h_sign ~ "Cis + trans",P & H & T & p_sign != h_sign ~ "Cis × trans",!P & H & T ~ "Compensatory",!P & !H & !T ~ "Conserved",TRUE ~ "Ambiguous"))
+  mutate(h_sign=sign(H_FC),t_sign=sign(T_FC),category=case_when(P & H & !T ~ "Cis only",P & !H & T ~ "Trans only",P & H & T & h_sign == t_sign ~ "Cis + trans",P & H & T & h_sign != t_sign ~ "Cis × trans",!P & H & T ~ "Compensatory",!P & !H & !T ~ "Conserved",TRUE ~ "Ambiguous"))
 
 barley_classified$category <- factor(barley_classified$category,levels=category_levels)
 
