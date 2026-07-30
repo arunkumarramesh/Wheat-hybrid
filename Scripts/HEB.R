@@ -277,57 +277,14 @@ bias_distance_plot <- ggplot(bc2 %>% filter(!is.na(n_hits),n_hits>0),aes(x=dist_
 
 ## check if bias distance between parents differs between DE genes vs non DE genes, boxplot
 
-additive_ids <- unique(read.table("additive_genes.txt")$V1)
-dominant_ids <- unique(read.table("dominant_genes.txt")$V1)
-transgressive_ids <- unique(read.table("transgressive_genes.txt")$V1)
-nonDE_ids <- unique(read.table("nonDE_genes.txt")$V1)
-nonDE_ids <- setdiff(nonDE_ids,c(additive_ids,dominant_ids,transgressive_ids))
-triad_combinations <- homologies_kept[,c("group_id","A","B","D")]
-triad_combinations$A_class <- ifelse(triad_combinations$A %in% additive_ids,"Additive",ifelse(triad_combinations$A %in% dominant_ids,"Dominant",ifelse(triad_combinations$A %in% transgressive_ids,"Transgressive",ifelse(triad_combinations$A %in% nonDE_ids,"Non-DE","Unclassified"))))
-triad_combinations$B_class <- ifelse(triad_combinations$B %in% additive_ids,"Additive",ifelse(triad_combinations$B %in% dominant_ids,"Dominant",ifelse(triad_combinations$B %in% transgressive_ids,"Transgressive",ifelse(triad_combinations$B %in% nonDE_ids,"Non-DE","Unclassified"))))
-triad_combinations$D_class <- ifelse(triad_combinations$D %in% additive_ids,"Additive",ifelse(triad_combinations$D %in% dominant_ids,"Dominant",ifelse(triad_combinations$D %in% transgressive_ids,"Transgressive",ifelse(triad_combinations$D %in% nonDE_ids,"Non-DE","Unclassified"))))
-triad_combinations_classified <- triad_combinations[triad_combinations$A_class!="Unclassified" & triad_combinations$B_class!="Unclassified" & triad_combinations$D_class!="Unclassified",]
-triad_combinations_classified$combination <- apply(triad_combinations_classified[,c("A_class","B_class","D_class")],1,function(x) paste(sort(x),collapse=" | "))
-combination_counts <- as.data.frame(table(triad_combinations_classified$combination),stringsAsFactors=FALSE)
-colnames(combination_counts) <- c("Homoeolog classification","n_triads")
-combination_counts <- combination_counts[order(-combination_counts$n_triads),]
-combination_counts
-bc3 <- bc2
-bc3$triad_status <- triad_combinations_classified$combination[match(bc3$group_id,triad_combinations_classified$group_id)]
-triad_counts <- bc3 %>%
-  filter(!is.na(triad_status)) %>%
-  group_by(triad_status) %>%
-  summarise(n_triads=n_distinct(group_id),.groups="drop") %>%
-  filter(n_triads>100)
-bc_plot <- bc3 %>%
-  filter(triad_status %in% triad_counts$triad_status) %>%
-  distinct(group_id,.keep_all=TRUE) %>%
-  select(group_id,triad_status,dist_CS_P)
-status_order <- c("Non-DE | Non-DE | Non-DE",
-                  "Additive | Non-DE | Non-DE",
-                  "Non-DE | Non-DE | Transgressive",
-                  "Transgressive | Transgressive | Transgressive")
-bc_plot$triad_status <- factor(bc_plot$triad_status,levels=status_order)
-triad_counts$triad_status <- factor(triad_counts$triad_status,levels=status_order)
-hsd_groups <- HSD.test(aov(dist_CS_P~triad_status,data=bc_plot),"triad_status",group=TRUE)$groups %>%
-  rownames_to_column("triad_status") %>%
-  as_tibble()
-hsd_groups$triad_status <- factor(hsd_groups$triad_status,levels=status_order)
+bc_plot_plot <- ggplot(data = (bc2 %>% filter(!is.na(n_hits)) %>% mutate(n_hits_f = factor(n_hits))), aes(x = n_hits_f, y = dist_CS_P)) +
+  geom_boxplot(fill = "#69b3a2", color = "black", outlier.shape = 16, outlier.size = 1.5) +
+  stat_summary(fun = median, geom = "text",aes(label = sprintf("%.2f", after_stat(y))),vjust = -0.5, size = 3.3) +
+  geom_text(data = HSD.test(aov(dist_CS_P ~ n_hits_f, data = (bc2 %>% filter(!is.na(n_hits)) %>% mutate(n_hits_f = factor(n_hits)))), "n_hits_f", group = TRUE)$groups %>% rownames_to_column("n_hits_f") %>% as_tibble(), aes(n_hits_f, y = 1.15, label = groups),vjust = -0.2, size = 4, fontface = "bold") +
+  labs(x = "Number of DE homoeologs",y = "Parental bias difference") +
+  theme_minimal(base_size = 13) +
+  ylim(0,1.25)
 
-
-bc_plot_plot <- ggplot(bc_plot,aes(x=triad_status,y=dist_CS_P)) +
-  geom_boxplot(fill="#69b3a2",color="black",outlier.shape=16,outlier.size=1.5) +
-  stat_summary(fun=median,geom="text",aes(label=sprintf("%.2f",after_stat(y))),position=position_nudge(y=0.025),vjust=-0.5,hjust=0,size=3.3) +
-  geom_text(data=triad_counts,aes(x=triad_status,y=0.75,label=paste0("n=",n_triads)),inherit.aes=FALSE,size=3.3) +
-  geom_text(data=hsd_groups,aes(x=triad_status,y=0.64,label=groups),inherit.aes=FALSE,size=4,fontface="bold") +
-  labs(x="Homoeolog classification",y="Parental bias difference") +
-  theme_minimal(base_size=13) +
-  coord_flip() +
-  ylim(0,0.8)
-
-pdf(file="parental_bias_distance_plots.pdf",height=3,width=9)
-plot_grid(bc_plot_plot,bias_distance_plot,ncol=2,labels="AUTO",rel_widths = c(1.6,1))
-dev.off()
 
 ## get HEB estimates for how things change in hybrids 
 buckets <- homologies_kept %>%
@@ -391,7 +348,9 @@ pdf(file="ABD_CS_PvCSxP.pdf",height=7.5,width=7)
 plot_grid(hebbias_avecpm_plot_d,hebbias_avecpm_plot_g,hebbias_cv_plot_g,ncol=1, labels="AUTO")
 dev.off()
 
-pdf(file="HEB_DE.pdf",height=3,width=15)
-plot_grid(combo_counts_mod_plot,combo_counts_mod_hybrid_plot,hebbias_cv_plot_d,ncol=3,labels="AUTO")
+pdf(file="HEB_DE.pdf",height=6,width=10)
+plot_grid(plot_grid(combo_counts_mod_plot,combo_counts_mod_hybrid_plot,ncol=2,labels=c("A","B")),plot_grid(hebbias_cv_plot_d,bc_plot_plot,bias_distance_plot,ncol=3,labels=c("C","D","E"),rel_widths = c(1.5,1,1.5)),ncol=1)
 dev.off()
+
+
 
