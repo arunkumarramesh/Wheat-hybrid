@@ -35,11 +35,8 @@ edgeR.DGElist <- calcNormFactors(edgeR.DGElist, method = "TMM")
 cpm_log <- cpm(edgeR.DGElist, log = TRUE)
 cpm_nolog <- cpm(edgeR.DGElist, log = FALSE)
 colnames(cpm_log) <- sub("_.*","",colnames(cpm_log))
-colnames(cpm_log) <- sub("_.*","",colnames(cpm_log))
 cpm_nolog_relative <- cpm_nolog/rowMeans(cpm_nolog)
 colnames(cpm_nolog_relative) <- sub("_.*","",colnames(cpm_nolog_relative))
-colnames(cpm_nolog_relative) <- sub("_.*","",colnames(cpm_nolog_relative))
-colnames(cpm_nolog) <- sub("_.*","",colnames(cpm_nolog))
 colnames(cpm_nolog) <- sub("_.*","",colnames(cpm_nolog))
 colnames(cpm_nolog) <- gsub("PXCS2","PxCS2",colnames(cpm_nolog))
 colnames(cpm_nolog_relative) <- gsub("PXCS2","PxCS2",colnames(cpm_nolog_relative))
@@ -71,8 +68,8 @@ bias_categories_cpm <- attach_cpm(bias_categories_cpm, cpm_nolog, homologies_kep
 bias_categories_cpm$triad_cpm <- bias_categories_cpm$A_cpm+bias_categories_cpm$B_cpm+bias_categories_cpm$D_cpm
 
 data <- read.csv(file="CSvP all genes.csv",row.names = 1)
-data_sig <- data[data$adj.P.Val < 0.05 & data$logFC > 0.58,]
-data_sig2 <- data[data$adj.P.Val < 0.05 & data$logFC < -0.58,]
+data_sig <- data[data$adj.P.Val < 0.05 & data$logFC > 1,]
+data_sig2 <- data[data$adj.P.Val < 0.05 & data$logFC < -1,]
 ids <- rownames(data)
 ids_sig <- rownames(data_sig)
 ids_sig2 <- rownames(data_sig2)
@@ -123,8 +120,7 @@ total_n    <- sum(combo_counts$Number_DE_homoeologs, na.rm = TRUE)
 non_none_n <- sum(combo_counts_mod$Number_DE_homoeologs, na.rm = TRUE)
 pct_non    <- 100 * non_none_n / total_n
 
-pdf("DE_subgenome_cs_p.pdf",height=3,width=5)
-ggplot(combo_counts_mod,
+combo_counts_mod_plot <- ggplot(combo_counts_mod,
        aes(x = Subgenome, y = Number_DE_homoeologs, fill = Direction)) +
   geom_col(position = position_dodge(width = 0.8), width = 0.7) +
   geom_text(aes(label = Number_DE_homoeologs),
@@ -139,11 +135,10 @@ ggplot(combo_counts_mod,
     fill = "Direction"
   ) +
   theme_minimal(base_size = 12)
-dev.off()
 
 data <- read.csv(file="CS_PvCSxP all genes.csv",row.names = 1)
-data_sig <- data[data$adj.P.Val < 0.05 & data$logFC > 0.58,]
-data_sig2 <- data[data$adj.P.Val < 0.05 & data$logFC < -0.58,]
+data_sig <- data[data$adj.P.Val < 0.05 & data$logFC > 1,]
+data_sig2 <- data[data$adj.P.Val < 0.05 & data$logFC < -1,]
 ids <- rownames(data)
 ids_sig <- rownames(data_sig)
 ids_sig2 <- rownames(data_sig2)
@@ -186,14 +181,13 @@ combo_counts_mod_2 <- combo_counts %>%
   mutate(Subgenome = factor(Subgenome, levels = c("A","B","D","AB","AD","BD","ABD","none"))) %>%
   filter(Subgenome != "none")
 combo_counts_mod_2$Direction <- "Parents"
-combo_counts_mod <- rbind(combo_counts_mod_1,combo_counts_mod_2)
+combo_counts_mod_hybrid <- rbind(combo_counts_mod_1,combo_counts_mod_2)
 
-total_n    <- sum(combo_counts$Number_DE_homoeologs, na.rm = TRUE)
-non_none_n <- sum(combo_counts_mod$Number_DE_homoeologs, na.rm = TRUE)
-pct_non    <- 100 * non_none_n / total_n
+total_n_hybrid    <- sum(combo_counts$Number_DE_homoeologs, na.rm = TRUE)
+non_none_n_hybrid <- sum(combo_counts_mod_hybrid$Number_DE_homoeologs, na.rm = TRUE)
+pct_non_hybrid    <- 100 * non_none_n_hybrid / total_n_hybrid
 
-pdf("DE_subgenome_CS_PvCSxP.pdf",height=3,width=6)
-ggplot(combo_counts_mod,aes(x = Subgenome, y = Number_DE_homoeologs, fill = Direction)) +
+combo_counts_mod_hybrid_plot <- ggplot(combo_counts_mod_hybrid,aes(x = Subgenome, y = Number_DE_homoeologs, fill = Direction)) +
   geom_col(position = position_dodge(width = 0.8), width = 0.7) +
   geom_text(aes(label = Number_DE_homoeologs),
             position = position_dodge(width = 0.8),
@@ -203,11 +197,11 @@ ggplot(combo_counts_mod,aes(x = Subgenome, y = Number_DE_homoeologs, fill = Dire
   labs(
     x = "Subgenome of DE homoeologs",
     y = "Number of DE homoeologs",
-    title = sprintf("%.1f%% of %s triads have DE homoeologs", pct_non, total_n),
+    title = sprintf("%.1f%% of %s triads have DE homoeologs", pct_non_hybrid, total_n_hybrid),
     fill = "Direction"
   ) +
   theme_minimal(base_size = 12)
-dev.off()
+
 
 # Check if number of triads in DE homoeologs in hybrids in unusual
 # n_rows: number of rows, p: proportion of cells to sample, trials: number of independent repeats
@@ -235,13 +229,13 @@ sample_full_rows <- function(n_rows, p = NULL, n_cols = 3, trials = 1, seed = NU
 }
 
 # 10000 trials to estimate the distribution
-res2 <- sample_full_rows(n_rows = 6591 , p = 0.436, n_cols = 3, trials = 10000, seed = 123)
+res2 <- sample_full_rows(n_rows = 6591 , p = 0.223, n_cols = 3, trials = 10000, seed = 123)
 mean(res2$full_rows_count)
 
 pdf(file="Number_triads_expected.pdf",height=2.5,width=4)
 ggplot(data.frame(full_rows_count = res2$full_rows_count), aes(x = full_rows_count)) +
   geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
-  geom_vline(xintercept = 1500, color = "red", linetype = "dashed", linewidth = 1) +
+  geom_vline(xintercept = 727, color = "red", linetype = "dashed", linewidth = 1) +
   labs(x = "Expected number of triads\nwith three DE homoeologs", y = "Frequency") +
   theme_minimal(base_size = 14)
 dev.off()
@@ -270,18 +264,72 @@ bc2 <- bc2 %>%
 bc2 <- left_join(bc2,hits[c(4,14)],by="group_id")
 
 
+library(ggpointdensity)
+
+bias_distance_plot <- ggplot(bc2 %>% filter(!is.na(n_hits),n_hits>0),aes(x=dist_to_CS,y=dist_to_P)) +
+  geom_abline(slope=1,intercept=0) +
+  geom_pointdensity(size=0.8) +
+  scale_color_viridis_c(name="Density") +
+  coord_cartesian(xlim=c(0,1),ylim=c(0,1)) +
+  labs(x="Bias difference from CS",y="Bias difference from Paragon") +
+  theme_classic(base_size=10)
+
+
 ## check if bias distance between parents differs between DE genes vs non DE genes, boxplot
 
-pdf(file="bias_distance_parents_de.pdf",height=3.5,width=3)
-ggplot(data = (bc2 %>% filter(!is.na(n_hits)) %>% mutate(n_hits_f = factor(n_hits))), aes(x = n_hits_f, y = dist_CS_P)) +
-  geom_boxplot(fill = "#69b3a2", color = "black", outlier.shape = 16, outlier.size = 1.5) +
-  stat_summary(fun = median, geom = "text",aes(label = sprintf("%.2f", after_stat(y))),vjust = -0.5, size = 3.3) +
-  geom_text(data = HSD.test(aov(dist_CS_P ~ n_hits_f, data = (bc2 %>% filter(!is.na(n_hits)) %>% mutate(n_hits_f = factor(n_hits)))), "n_hits_f", group = TRUE)$groups %>% rownames_to_column("n_hits_f") %>% as_tibble(), aes(n_hits_f, y = 1.15, label = groups),vjust = -0.2, size = 4, fontface = "bold") +
-  labs(x = "Number of DE homoeologs",y = "Parental bias difference") +
-  theme_minimal(base_size = 13) +
-  ylim(0,1.25)
+additive_ids <- unique(read.table("additive_genes.txt")$V1)
+dominant_ids <- unique(read.table("dominant_genes.txt")$V1)
+transgressive_ids <- unique(read.table("transgressive_genes.txt")$V1)
+nonDE_ids <- unique(read.table("nonDE_genes.txt")$V1)
+nonDE_ids <- setdiff(nonDE_ids,c(additive_ids,dominant_ids,transgressive_ids))
+triad_combinations <- homologies_kept[,c("group_id","A","B","D")]
+triad_combinations$A_class <- ifelse(triad_combinations$A %in% additive_ids,"Additive",ifelse(triad_combinations$A %in% dominant_ids,"Dominant",ifelse(triad_combinations$A %in% transgressive_ids,"Transgressive",ifelse(triad_combinations$A %in% nonDE_ids,"Non-DE","Unclassified"))))
+triad_combinations$B_class <- ifelse(triad_combinations$B %in% additive_ids,"Additive",ifelse(triad_combinations$B %in% dominant_ids,"Dominant",ifelse(triad_combinations$B %in% transgressive_ids,"Transgressive",ifelse(triad_combinations$B %in% nonDE_ids,"Non-DE","Unclassified"))))
+triad_combinations$D_class <- ifelse(triad_combinations$D %in% additive_ids,"Additive",ifelse(triad_combinations$D %in% dominant_ids,"Dominant",ifelse(triad_combinations$D %in% transgressive_ids,"Transgressive",ifelse(triad_combinations$D %in% nonDE_ids,"Non-DE","Unclassified"))))
+triad_combinations_classified <- triad_combinations[triad_combinations$A_class!="Unclassified" & triad_combinations$B_class!="Unclassified" & triad_combinations$D_class!="Unclassified",]
+triad_combinations_classified$combination <- apply(triad_combinations_classified[,c("A_class","B_class","D_class")],1,function(x) paste(sort(x),collapse=" | "))
+combination_counts <- as.data.frame(table(triad_combinations_classified$combination),stringsAsFactors=FALSE)
+colnames(combination_counts) <- c("Homoeolog classification","n_triads")
+combination_counts <- combination_counts[order(-combination_counts$n_triads),]
+combination_counts
+bc3 <- bc2
+bc3$triad_status <- triad_combinations_classified$combination[match(bc3$group_id,triad_combinations_classified$group_id)]
+triad_counts <- bc3 %>%
+  filter(!is.na(triad_status)) %>%
+  group_by(triad_status) %>%
+  summarise(n_triads=n_distinct(group_id),.groups="drop") %>%
+  filter(n_triads>100)
+bc_plot <- bc3 %>%
+  filter(triad_status %in% triad_counts$triad_status) %>%
+  distinct(group_id,.keep_all=TRUE) %>%
+  select(group_id,triad_status,dist_CS_P)
+status_order <- c("Non-DE | Non-DE | Non-DE",
+                  "Additive | Non-DE | Non-DE",
+                  "Non-DE | Non-DE | Transgressive",
+                  "Transgressive | Transgressive | Transgressive")
+bc_plot$triad_status <- factor(bc_plot$triad_status,levels=status_order)
+triad_counts$triad_status <- factor(triad_counts$triad_status,levels=status_order)
+hsd_groups <- HSD.test(aov(dist_CS_P~triad_status,data=bc_plot),"triad_status",group=TRUE)$groups %>%
+  rownames_to_column("triad_status") %>%
+  as_tibble()
+hsd_groups$triad_status <- factor(hsd_groups$triad_status,levels=status_order)
+
+
+bc_plot_plot <- ggplot(bc_plot,aes(x=triad_status,y=dist_CS_P)) +
+  geom_boxplot(fill="#69b3a2",color="black",outlier.shape=16,outlier.size=1.5) +
+  stat_summary(fun=median,geom="text",aes(label=sprintf("%.2f",after_stat(y))),position=position_nudge(y=0.025),vjust=-0.5,hjust=0,size=3.3) +
+  geom_text(data=triad_counts,aes(x=triad_status,y=0.75,label=paste0("n=",n_triads)),inherit.aes=FALSE,size=3.3) +
+  geom_text(data=hsd_groups,aes(x=triad_status,y=0.64,label=groups),inherit.aes=FALSE,size=4,fontface="bold") +
+  labs(x="Homoeolog classification",y="Parental bias difference") +
+  theme_minimal(base_size=13) +
+  coord_flip() +
+  ylim(0,0.8)
+
+pdf(file="parental_bias_distance_plots.pdf",height=3,width=9)
+plot_grid(bc_plot_plot,bias_distance_plot,ncol=2,labels="AUTO",rel_widths = c(1.6,1))
 dev.off()
 
+## get HEB estimates for how things change in hybrids 
 buckets <- homologies_kept %>%
   mutate(n_hits = rowSums(across(c(A, B, D), ~ .x %in% ids_sig))) %>%
   group_split(n_hits)  # list of tibbles for 0,1,2,3 hits (if present)
@@ -293,10 +341,11 @@ hebbias_cv_plot_d <- ggplot(data=bias_categories[bias_categories$group_id %in% b
   geom_boxplot() +
   geom_text(data = HSD.test(aov(CV ~ sample, data = bias_categories[bias_categories$group_id %in% buckets[[4]]$group_id,]), "sample", group = TRUE)$groups %>% rownames_to_column("sample") %>% as_tibble() %>% mutate(genotype = sub("^(CSxP|PxCS|CS|P).*", "\\1", sample),genotype = ifelse(genotype == "PxCS", "CSxP", genotype)), 
             aes(sample, y = 0.8, label = groups),hjust = -0.3) +
-  geom_text(data = bias_categories[bias_categories$group_id %in% buckets[[4]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
-            aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
+  #geom_text(data = bias_categories[bias_categories$group_id %in% buckets[[4]]$group_id, ] %>% group_by(sample, genotype) %>% summarise(med = median(CV, na.rm = TRUE), .groups = "drop"),
+  #          aes(x = sample, y = med, label = number(med, accuracy = 0.01)),vjust = -0.4, size = 3, inherit.aes = FALSE) +
   scale_y_continuous(expand = expansion(mult = c(0.02, 0.08))) +  
   coord_cartesian(clip = "off") +
+  theme(axis.text.x=element_text(angle=90,vjust=1,hjust=1)) +
   ylab("HEB") +
   xlab("") +
   scale_fill_manual(values = c(CS = "#0072B2", CSxP = "#E69F00", P = "#CC79A7"), name = "Genotype")
@@ -342,6 +391,7 @@ pdf(file="ABD_CS_PvCSxP.pdf",height=7.5,width=7)
 plot_grid(hebbias_avecpm_plot_d,hebbias_avecpm_plot_g,hebbias_cv_plot_g,ncol=1, labels="AUTO")
 dev.off()
 
-pdf(file="ABD_HEB.pdf",height=2.5,width=7)
-hebbias_cv_plot_d
+pdf(file="HEB_DE.pdf",height=3,width=15)
+plot_grid(combo_counts_mod_plot,combo_counts_mod_hybrid_plot,hebbias_cv_plot_d,ncol=3,labels="AUTO")
 dev.off()
+

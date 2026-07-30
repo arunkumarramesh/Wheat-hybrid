@@ -1,4 +1,4 @@
-setwd("~/Downloads/wheat")
+
 library(edgeR)
 library(limma)
 library(ComplexHeatmap)
@@ -196,7 +196,7 @@ fit <- lmFit(y, mm)
 asetest <- eBayes(fit)
 top.table <- topTable(asetest, coef = "allelealt", sort.by = "P", n = Inf)
 asetest_pvals <- topTable(asetest, coef = "allelealt", sort.by = "none", n = Inf, p.value = 1, lfc = 0)
-dim(asetest_pvals[abs(asetest_pvals$logFC) > 0.58 & asetest_pvals$adj.P.Val < 0.05,])
+dim(asetest_pvals[abs(asetest_pvals$logFC) > 1 & asetest_pvals$adj.P.Val < 0.05,])
 write.csv(asetest_pvals,file="Ref_vs_Alt.csv")
 
 DGEgenes <- rownames(subset(top.table, top.table$adj.P.Val < 0.05))
@@ -205,72 +205,153 @@ pdf("ase_heatmap.pdf",height=3.5,width=4)
 Heatmap(mat_DGEgenes, name = "Scaled CPM", show_row_names = FALSE, use_raster = F)
 dev.off()
 
+
+category_levels <- c("Conserved","Cis only","Trans only","Cis + trans","Cis × trans","Compensatory","Ambiguous")
+category_colors <- c("#66C2A5","#FC8D62","#8DA0CB","#E78AC3","#A6D854","#FFD92F","#E5C494")
+
 asetest_pvals_sub <- asetest_pvals[c(1,5)]
-asetest_pvals_sub$Sig <- F
-asetest_pvals_sub$Sig[abs(asetest_pvals_sub$logFC) > 0.58 & asetest_pvals_sub$adj.P.Val < 0.05] <- TRUE
-asetest_pvals_sub <- asetest_pvals_sub[c(-2)]
-colnames(asetest_pvals_sub) <- c("H_FC", "H")
+asetest_pvals_sub$H <- abs(asetest_pvals_sub$logFC) > 1 & asetest_pvals_sub$adj.P.Val < 0.05
+asetest_pvals_sub <- asetest_pvals_sub[-2]
+colnames(asetest_pvals_sub) <- c("H_FC","H")
 asetest_pvals_sub$gene <- rownames(asetest_pvals_sub)
-all.CSvP <- read.csv(file = "CSvP all genes.csv",row.names = 1)
-all.CSvP <- all.CSvP[c(1,5)]
-all.CSvP$Sig <- F
-all.CSvP$Sig[abs(all.CSvP$logFC) > 0.58 & all.CSvP$adj.P.Val < 0.05] <- TRUE
-all.CSvP <- all.CSvP[c(-2)]
-colnames(all.CSvP) <- c("P_FC", "P")
+
+all.CSvP <- read.csv("CSvP all genes.csv",row.names=1)
+all.CSvP$P <- abs(all.CSvP$logFC) > 1 & all.CSvP$adj.P.Val < 0.05
+all.CSvP <- all.CSvP[c("logFC","P")]
+colnames(all.CSvP) <- c("P_FC","P")
 all.CSvP$gene <- rownames(all.CSvP)
-all.CS_PvCSxP <- read.csv(file = "CS_PvCSxP all genes.csv",row.names = 1)
-all.CS_PvCSxP <- all.CS_PvCSxP[c(1,5)]
-all.CS_PvCSxP$Sig <- F
-all.CS_PvCSxP$Sig[abs(all.CS_PvCSxP$logFC) > 0.58 & all.CS_PvCSxP$adj.P.Val < 0.05] <- TRUE
-all.CS_PvCSxP <- all.CS_PvCSxP[c(-2)]
-colnames(all.CS_PvCSxP) <- c("T_FC", "T")
-all.CS_PvCSxP$gene <- rownames(all.CS_PvCSxP)
-all_genes <- inner_join(asetest_pvals_sub,all.CSvP,by="gene")
-all_genes <- inner_join(all_genes,all.CS_PvCSxP,by="gene")
 
-classified <- all_genes %>%
-  # convert to comparable signs
-  mutate(p_sign = case_when(is.na(P_FC) ~ NA_integer_, P_FC > 0 ~  1L, P_FC < 0  ~ -1L, TRUE   ~  0L), 
-         h_sign = case_when(is.na(H_FC) ~ NA_integer_, H_FC > 0 ~ 1L, H_FC < 0 ~ -1L, TRUE ~ 0L) ) %>%
-  mutate( category = case_when(
-    # Cis only: sig in P and H, NOT sig in T
-    P & H & !T ~ "Cis only",
-    # Trans only: sig in P, NOT H, but sig in T
-    P & !H & T ~ "Trans only",
-    # Cis + trans: sig in P, H, T; same sign
-    P & H & T & !is.na(p_sign) & !is.na(h_sign) & (p_sign == h_sign) ~ "Cis + trans",
-    # Cis × trans: sig in P, H, T; opposite sign
-    P & H & T & !is.na(p_sign) & !is.na(h_sign) & (p_sign != h_sign) ~ "Cis × trans",
-    # Compensatory: sig in H, NOT P, and sig in T
-    !P & H & T ~ "Compensatory",
-    # Conserved: none are significant
-    !P & !H & !T ~ "Conserved",
-    # Everything else
-    TRUE ~ "Ambiguous")) %>%
-  select(gene, category)
+## Mcmanus approach
 
-classified_limma <- classified
-write.csv(classified_limma,file="classified_limma.csv",row.names = F)
+parent_counts_base <- data.frame(gene=CS_common_genes$CS_gene,CS1=CS[[1]]$CS_count[match(CS_common_genes$CS_gene,CS[[1]]$CS_gene)],CS2=CS[[2]]$CS_count[match(CS_common_genes$CS_gene,CS[[2]]$CS_gene)],CS3=CS[[3]]$CS_count[match(CS_common_genes$CS_gene,CS[[3]]$CS_gene)],P1=Par[[1]]$Par_count[match(CS_common_genes$CS_gene,Par[[1]]$CS_gene)],P2=Par[[2]]$Par_count[match(CS_common_genes$CS_gene,Par[[2]]$CS_gene)],P3=Par[[3]]$Par_count[match(CS_common_genes$CS_gene,Par[[3]]$CS_gene)])
 
-counts_limma <- as.data.frame(table(classified_limma$category))
-names(counts_limma) <- c("category", "count")
-props_limma <- prop.table(table(classified_limma$category))
-df_limma <- counts_limma %>%
-  mutate(prop = as.numeric(props_limma[as.character(category)]), category = factor(category, levels = category))
+fisher_parent_counts <- parent_counts_base %>%
+  mutate(parent_CS=CS1+CS2+CS3,parent_Par=P1+P2+P3) %>%
+  select(gene,parent_CS,parent_Par)
 
-pdf(file="limma_classification_subgenome.pdf",height=3.5,width=4)
-ggplot(df_limma, aes(x = category, y = prop, fill = category)) +
+fisher_ref_cols <- grep("_ref$",colnames(hybrid_counts),value=TRUE)
+fisher_alt_cols <- grep("_alt$",colnames(hybrid_counts),value=TRUE)
+
+fisher_hybrid_counts <- data.frame(gene=rownames(hybrid_counts),hybrid_CS=rowSums(hybrid_counts[,fisher_ref_cols,drop=FALSE]),hybrid_Par=rowSums(hybrid_counts[,fisher_alt_cols,drop=FALSE]))
+
+fisher_T_results <- inner_join(fisher_parent_counts,fisher_hybrid_counts,by="gene")
+
+fisher_T_results$T_p <- mapply(function(parent_CS,parent_Par,hybrid_CS,hybrid_Par) fisher.test(matrix(c(parent_CS,parent_Par,hybrid_CS,hybrid_Par),nrow=2,byrow=TRUE))$p.value,fisher_T_results$parent_CS,fisher_T_results$parent_Par,fisher_T_results$hybrid_CS,fisher_T_results$hybrid_Par)
+
+fisher_T_results$T <- p.adjust(fisher_T_results$T_p,method="BH") < 0.05
+
+fisher_all_genes <- asetest_pvals_sub %>%
+  inner_join(all.CSvP,by="gene") %>%
+  inner_join(fisher_T_results[c("gene","T")],by="gene")
+
+fisher_classified <- fisher_all_genes %>%
+  mutate(p_sign=sign(P_FC),h_sign=sign(H_FC),category=case_when(P & H & !T ~ "Cis only",P & !H & T ~ "Trans only",P & H & T & p_sign == h_sign ~ "Cis + trans",P & H & T & p_sign != h_sign ~ "Cis × trans",!P & H & T ~ "Compensatory",!P & !H & !T ~ "Conserved",TRUE ~ "Ambiguous"))
+
+fisher_classified$category <- factor(fisher_classified$category,levels=category_levels)
+
+fisher_df <- fisher_classified %>%
+  count(category,.drop=FALSE,name="count") %>%
+  mutate(prop=count/sum(count))
+
+fisher_plot <- ggplot(fisher_df,aes(x=category,y=prop,fill=category)) +
   geom_col() +
-  geom_text(aes(label = percent(prop, accuracy = 0.1)),vjust = -0.3, size = 3) +
-  scale_y_continuous(labels = percent_format(accuracy = 0.1), expand = expansion(mult = c(0, 0.08))) +
-  scale_fill_manual(values = c("#66C2A5","#FC8D62","#8DA0CB","#E78AC3","#A6D854","#FFD92F","#E5C494"), guide = "none") +
-  scale_x_discrete(labels = function(x) {
-    x <- gsub("\\b[Cc]is\\b", "<i>cis</i>", x, perl = TRUE)
-    x <- gsub("\\b[Tt]rans\\b", "<i>trans</i>", x, perl = TRUE)
+  geom_text(aes(label=percent(prop,accuracy=0.1)),vjust=-0.3,size=3) +
+  scale_y_continuous(labels=percent_format(accuracy=0.1),expand=expansion(mult=c(0,0.08))) +
+  scale_fill_manual(values=category_colors,guide="none") +
+  scale_x_discrete(labels=function(x) {
+    x <- gsub("\\b[Cc]is\\b","<i>cis</i>",x,perl=TRUE)
+    x <- gsub("\\b[Tt]rans\\b","<i>trans</i>",x,perl=TRUE)
     x
   }) +
-  labs(x = NULL, y = "Proportion of genes", title = paste("n=",nrow(classified_limma))) +
-  theme_minimal(base_size = 12) +
-  theme(axis.text.x = ggtext::element_markdown(angle = 90, hjust = 1)) +
-  coord_cartesian(clip = "off")
+  labs(x=NULL,y="Proportion of genes",title=paste0("Fisher test (n=",nrow(fisher_classified),")")) +
+  theme_minimal(base_size=12) +
+  theme(axis.text.x=ggtext::element_markdown(angle=90,hjust=1)) +
+  coord_cartesian(clip="off")
+
+## Haas approach
+
+barley_ref_cols <- grep("_ref$",colnames(hybrid_counts),value=TRUE)
+barley_hybrid_samples <- sub("_ref$","",barley_ref_cols)
+barley_alt_cols <- paste0(barley_hybrid_samples,"_alt")
+
+barley_genes <- Reduce(intersect,list(asetest_pvals_sub$gene,all.CSvP$gene,parent_counts_base$gene,rownames(hybrid_counts)))
+
+barley_parent_counts <- parent_counts_base[match(barley_genes,parent_counts_base$gene),]
+barley_hybrid_counts <- hybrid_counts[barley_genes,,drop=FALSE]
+
+barley_parent_matrix <- as.matrix(barley_parent_counts[,c("CS1","CS2","CS3","P1","P2","P3"),drop=FALSE])
+rownames(barley_parent_matrix) <- barley_parent_counts$gene
+storage.mode(barley_parent_matrix) <- "numeric"
+
+barley_hybrid_CS <- as.matrix(barley_hybrid_counts[,barley_ref_cols,drop=FALSE])
+barley_hybrid_Par <- as.matrix(barley_hybrid_counts[,barley_alt_cols,drop=FALSE])
+colnames(barley_hybrid_CS) <- barley_hybrid_samples
+colnames(barley_hybrid_Par) <- barley_hybrid_samples
+storage.mode(barley_hybrid_CS) <- "numeric"
+storage.mode(barley_hybrid_Par) <- "numeric"
+
+barley_hybrid_total <- barley_hybrid_CS + barley_hybrid_Par
+barley_biological_counts <- cbind(barley_parent_matrix,barley_hybrid_total)
+colnames(barley_biological_counts) <- c("CS1","CS2","CS3","P1","P2","P3",barley_hybrid_samples)
+
+barley_joint_counts <- cbind(barley_parent_matrix,barley_hybrid_CS,barley_hybrid_Par)
+colnames(barley_joint_counts) <- c("CS1_parent","CS2_parent","CS3_parent","P1_parent","P2_parent","P3_parent",paste0(barley_hybrid_samples,"_CS"),paste0(barley_hybrid_samples,"_Par"))
+
+barley_nf <- calcNormFactors(DGEList(counts=barley_biological_counts),method="TMM")
+barley_dge <- DGEList(counts=barley_joint_counts)
+barley_dge$samples$lib.size <- c(barley_nf$samples$lib.size[1:6],barley_nf$samples$lib.size[7:11],barley_nf$samples$lib.size[7:11])
+barley_dge$samples$norm.factors <- c(barley_nf$samples$norm.factors[1:6],barley_nf$samples$norm.factors[7:11],barley_nf$samples$norm.factors[7:11])
+
+barley_group <- factor(c(rep("Parent_CS",3),rep("Parent_Par",3),rep("Hybrid_CS",5),rep("Hybrid_Par",5)),levels=c("Parent_CS","Parent_Par","Hybrid_CS","Hybrid_Par"))
+barley_design <- model.matrix(~0+barley_group)
+colnames(barley_design) <- levels(barley_group)
+
+barley_pair <- c(rep("parent",6),barley_hybrid_samples,barley_hybrid_samples)
+
+for (sample_name in barley_hybrid_samples[-1]) {
+  barley_design <- cbind(barley_design,as.integer(barley_pair == sample_name))
+  colnames(barley_design)[ncol(barley_design)] <- paste0("pair_",sample_name)
+}
+
+barley_voom <- voom(barley_dge,barley_design,plot=FALSE)
+barley_fit <- lmFit(barley_voom,barley_design)
+barley_fit <- contrasts.fit(barley_fit,makeContrasts(T=(Parent_CS-Parent_Par)-(Hybrid_CS-Hybrid_Par),levels=barley_design))
+barley_fit <- eBayes(barley_fit)
+
+barley_T_results <- topTable(barley_fit,coef="T",sort.by="none",n=Inf,p.value=1,lfc=0)
+barley_T_results$gene <- rownames(barley_T_results)
+barley_T_results <- barley_T_results %>% transmute(gene,T_FC=logFC,T=adj.P.Val < 0.05)
+
+barley_all_genes <- asetest_pvals_sub %>%
+  inner_join(all.CSvP,by="gene") %>%
+  inner_join(barley_T_results,by="gene")
+
+barley_classified <- barley_all_genes %>%
+  mutate(p_sign=sign(P_FC),h_sign=sign(H_FC),category=case_when(P & H & !T ~ "Cis only",P & !H & T ~ "Trans only",P & H & T & p_sign == h_sign ~ "Cis + trans",P & H & T & p_sign != h_sign ~ "Cis × trans",!P & H & T ~ "Compensatory",!P & !H & !T ~ "Conserved",TRUE ~ "Ambiguous"))
+
+barley_classified$category <- factor(barley_classified$category,levels=category_levels)
+
+barley_df <- barley_classified %>%
+  count(category,.drop=FALSE,name="count") %>%
+  mutate(prop=count/sum(count))
+
+barley_plot <- ggplot(barley_df,aes(x=category,y=prop,fill=category)) +
+  geom_col() +
+  geom_text(aes(label=percent(prop,accuracy=0.1)),vjust=-0.3,size=3) +
+  scale_y_continuous(labels=percent_format(accuracy=0.1),expand=expansion(mult=c(0,0.08))) +
+  scale_fill_manual(values=category_colors,guide="none") +
+  scale_x_discrete(labels=function(x) {
+    x <- gsub("\\b[Cc]is\\b","<i>cis</i>",x,perl=TRUE)
+    x <- gsub("\\b[Tt]rans\\b","<i>trans</i>",x,perl=TRUE)
+    x
+  }) +
+  labs(x=NULL,y="Proportion of genes",title=paste0("Replicate-aware test (n=",nrow(barley_classified),")")) +
+  theme_minimal(base_size=12) +
+  theme(axis.text.x=ggtext::element_markdown(angle=90,hjust=1)) +
+  coord_cartesian(clip="off")
+
+combined_plot <- plot_grid(fisher_plot,barley_plot,nrow=1,labels=c("A","B"),align="hv")
+
+pdf("limma_classification_combined.pdf",height=4,width=8)
+print(combined_plot)
 dev.off()

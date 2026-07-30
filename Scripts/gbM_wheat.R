@@ -49,140 +49,131 @@ all_results$gbM_candidate <- all_results$context_candidate_CG == TRUE &all_resul
 all_results <- all_results[, -c(18:20, 24:26), with = FALSE]
 fwrite(all_results, "gene_body_methylation.tsv", sep = "\t")
 
-library(data.table)
-library(ggplot2)
-
-gbm_status <- fread("gene_body_methylation.tsv")
-gbm_status <- gbm_status[, c("gene_id", "sample", "gbM_candidate")]
-gbm_status <- dcast(gbm_status, gene_id ~ sample, value.var = "gbM_candidate")
-gbm_status$parent_status <- ifelse(gbm_status$CS == TRUE & gbm_status$P == TRUE,"gbM in both parents",
-                                   ifelse(gbm_status$CS == TRUE & gbm_status$P == FALSE,"CS-specific gbM",
-                                          ifelse(gbm_status$CS == FALSE & gbm_status$P == TRUE,"P-specific gbM","non-gbM in both parents"
-                                          )
-                                   )
-)
-gbm_status$hybrid_status <- ifelse(gbm_status$CSxP == TRUE, "gbM", "non-gbM")
-gbm_status$parent_status <- factor(gbm_status$parent_status,levels = c("gbM in both parents","CS-specific gbM","P-specific gbM","non-gbM in both parents"))
-gbm_status$hybrid_status <- factor(gbm_status$hybrid_status,levels = c("gbM", "non-gbM"))
-gbm_status$subgenome <- sub("^TraesCS[0-9]+([ABD]).*", "\\1", gbm_status$gene_id)
-gbm_status <- gbm_status[gbm_status$subgenome %in% c("A", "B", "D"), ]
-gbm_status$subgenome <- factor(gbm_status$subgenome, levels = c("A", "B", "D"))
-gbm_status <- gbm_status[!is.na(gbm_status$parent_status),]
-gbm_status <- gbm_status[!is.na(gbm_status$hybrid_status),]
-
-# classify gbM by subgenome
-plot_dt <- gbm_status %>%
-  group_by(subgenome, parent_status, hybrid_status) %>%
-  summarise(N = n(), .groups = "drop")
-plot_dt$subgenome <- factor(plot_dt$subgenome, levels = c("A", "B", "D"))
-plot_dt$parent_status <- factor(plot_dt$parent_status,levels = c("gbM in both parents", "CS-specific gbM", "P-specific gbM", "non-gbM in both parents"))
-plot_dt$hybrid_status <- factor(plot_dt$hybrid_status,levels = c("gbM", "non-gbM"))
-
-pdf(file="gbM_parents_hybrid.pdf",height=3,width=6.2)
-ggplot(plot_dt, aes(x = hybrid_status, y = parent_status, fill = N)) +
-  geom_tile(colour = "white", linewidth = 0.5) +
-  geom_text(aes(label = comma(N)), size = 3) +
-  facet_wrap(~subgenome, nrow = 1) +
-  scale_fill_gradient(low = "white", high = "#0072B2", labels = comma) +
-  labs(x = "Hybrid", y = NULL, fill = "Number of Genes") +
-  theme_bw(base_size = 12) +
-  theme(panel.grid = element_blank(),strip.background = element_rect(fill = "white", colour = "black"),axis.text.x = element_text(angle = 45, hjust = 1),axis.title = element_text(face = "bold"))
-dev.off()
-
 
 ## gbM by expression level
+
 library(data.table)
 library(ggplot2)
 
-cs_tpm <- read.table(file = "cs_tpm.tsv")
-cs_tpm <- as.data.table(cs_tpm, keep.rownames = "gene_id")
-cs_tpm <- cs_tpm[!grepl("LC$", gene_id)]
-colnames(cs_tpm) <- c("gene_id", sub("^PXCS", "PxCS", sub("_.*", "", colnames(cs_tpm)[-1]))); sample_cols <- colnames(cs_tpm)[-1]
-cs_tpm <- cs_tpm[rowSums(as.data.frame(cs_tpm)[, sample_cols] >= 1) >= 3]
-cs_tpm <- cs_tpm[, 1:10]
+cs_tpm <- read.table(file="cs_tpm.tsv")
+cs_tpm <- as.data.table(cs_tpm,keep.rownames="gene_id")
+cs_tpm <- cs_tpm[!grepl("LC$",gene_id)]
+colnames(cs_tpm) <- c("gene_id",sub("^PXCS","PxCS",sub("_.*","",colnames(cs_tpm)[-1])))
+sample_cols <- colnames(cs_tpm)[-1]
+cs_tpm <- cs_tpm[rowSums(as.data.frame(cs_tpm)[,sample_cols]>=1)>=3]
+cs_tpm <- cs_tpm[,1:10]
+tpm_gene <- data.table(gene_id=cs_tpm$gene_id,CS=rowMeans(cs_tpm[,c("CS1","CS2","CS3"),with=FALSE],na.rm=TRUE),CSxP=rowMeans(cs_tpm[,c("CSxP1","CSxP2","CSxP3"),with=FALSE],na.rm=TRUE),P=rowMeans(cs_tpm[,c("P1","P2","P3"),with=FALSE],na.rm=TRUE))
+tpm_long <- melt(tpm_gene,id.vars="gene_id",variable.name="genotype",value.name="TPM")
+gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_candidate)]
+gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_candidate")
+gbm_status <- gbm_status[!is.na(CS) & !is.na(CSxP) & !is.na(P)]
+gbm_status <- gbm_status[CS==CSxP & CSxP==P]
+gbm_status[,gbM_status:=factor(ifelse(CS,"gbM","non-gbM"),levels=c("non-gbM","gbM"))]
+gbm_status <- gbm_status[,.(gene_id,gbM_status)]
+plot_dt <- merge(tpm_long,gbm_status,by="gene_id")
+plot_dt[,genotype:=factor(genotype,levels=c("CS","CSxP","P"))]
+plot_dt[,log2_TPM:=log2(TPM+1)]
+median_labs <- plot_dt[,.(median_log2_TPM=median(log2_TPM,na.rm=TRUE)),by=gbM_status]
+median_labs[,label:=round(median_log2_TPM,2)]
+wilcox_p <- wilcox.test(log2_TPM~gbM_status,data=plot_dt)$p.value
 
-tpm_gene <- data.table(
-  gene_id = cs_tpm$gene_id,
-  CS = rowMeans(cs_tpm[, c("CS1", "CS2", "CS3"), with = FALSE], na.rm = TRUE),
-  CSxP = rowMeans(cs_tpm[, c("CSxP1", "CSxP2", "CSxP3"), with = FALSE], na.rm = TRUE),
-  P = rowMeans(cs_tpm[, c("P1", "P2", "P3"), with = FALSE], na.rm = TRUE)
-)
+plot_dt_plot <- ggplot(plot_dt,aes(x=gbM_status,y=log2_TPM,fill=gbM_status)) +
+  geom_boxplot(outlier.size=0.2,linewidth=0.3) +
+  geom_text(data=median_labs,aes(x=gbM_status,y=median_log2_TPM,label=label),inherit.aes=FALSE,size=3,vjust=-0.4) +
+  geom_text(data=data.frame(x=1.5,y=15),aes(x=x,y=y,label=paste0("italic(P)~'='~",signif(wilcox_p,3))),inherit.aes=FALSE,size=4,parse=TRUE) +
+  scale_fill_manual(values=c("non-gbM"="grey70","gbM"="#0072B2")) +
+  labs(x=NULL,y=expression(log[2]*"(TPM+1)"),fill=NULL) +
+  theme_bw(base_size=12) +
+  theme(panel.grid.minor=element_blank(),panel.grid.major=element_line(linewidth=0.2,colour="grey90"),strip.background=element_rect(fill="white",colour="black"),legend.position="none",axis.title=element_text(face="bold"))
 
-tpm_long <- melt(tpm_gene, id.vars = "gene_id", variable.name = "genotype", value.name = "TPM")
-
-gbm_status <- read.table("gene_body_methylation.tsv",header=T)
-gbm_status <- gbm_status[c(1,2,21)]
-colnames(gbm_status)[2] <- "genotype"
-
-plot_dt <- merge(tpm_long, gbm_status, by = c("gene_id", "genotype"))
-plot_dt$gbM_status <- ifelse(plot_dt$gbM_candidate, "gbM", "non-gbM")
-plot_dt$gbM_status <- factor(plot_dt$gbM_status, levels = c("non-gbM", "gbM"))
-plot_dt$genotype <- factor(plot_dt$genotype, levels = c("CS", "CSxP", "P"))
-plot_dt$log2_TPM <- log2(plot_dt$TPM + 1)
-plot_dt <- plot_dt[!is.na(plot_dt$gbM_status),]
-
-median_labs <- plot_dt %>%
-  group_by(gbM_status) %>%
-  summarise(median_log2_TPM = median(log2_TPM, na.rm = TRUE), .groups = "drop") %>%
-  mutate(label = round(median_log2_TPM, 2))
-
-p_lab <- data.frame(label = paste0("italic(P)~'='~",signif(wilcox.test(TPM ~ gbM_status, data = plot_dt)$p.value, 3)))
-
-pdf("expression_gbM_vs_non_gbM_by_genotype.pdf", width = 2, height = 3)
-ggplot(plot_dt, aes(x = gbM_status, y = log2_TPM, fill = gbM_status)) +
-  geom_boxplot(outlier.size = 0.2, linewidth = 0.3) +
-  geom_text(data = median_labs, aes(x = gbM_status, y = median_log2_TPM, label = label), inherit.aes = FALSE, size = 3, vjust = -0.4) +
-  geom_text(data = p_lab, aes(x = 1.5, y = 15, label = paste0("italic(P)~'='~", signif(wilcox.test(plot_dt$log2_TPM ~ plot_dt$gbM_status)$p.value, 3))), inherit.aes = FALSE, size = 4, parse = TRUE) +
-  scale_fill_manual(values = c("non-gbM" = "grey70", "gbM" = "#0072B2")) +
-  labs(x = NULL, y = "Mean log2(TPM)", fill = NULL) +
-  theme_bw(base_size = 12) +
-  theme(panel.grid.minor = element_blank(),panel.grid.major = element_line(linewidth = 0.2, colour = "grey90"),strip.background = element_rect(fill = "white", colour = "black"),legend.position = "none",axis.title = element_text(face = "bold"))
-dev.off()
 
 ## gbM and bias
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(agricolae)
 
-bias_categories <- read.csv(file="bias_category_all_samples_inc_orig_expr.csv")
-bias_categories$sample <- gsub("_.*","",bias_categories$sample)
-bias_categories <- bias_categories[!bias_categories$sample %in% "PxCS3",]
-bias_categories$sample <- gsub("PXCS2","PxCS2",bias_categories$sample)
-bias_categories <- bias_categories[!bias_categories$sample %in% c("PxCS1", "PxCS2"),]
-bias_categories <- bias_categories %>%
-  mutate(genotype = sub("[0-9]+$","",as.character(sample))) %>%
-  group_by(group_id,genotype) %>%
-  summarise(A_tpm = mean(A_tpm,na.rm = TRUE),B_tpm = mean(B_tpm,na.rm = TRUE),D_tpm = mean(D_tpm,na.rm = TRUE),.groups = "drop") %>%
-  mutate(triad_tpm = A_tpm + B_tpm + D_tpm,A = A_tpm / triad_tpm,B = B_tpm / triad_tpm,D = D_tpm / triad_tpm)
-bias_categories$CV <- apply(bias_categories[7:9],1,sd)/apply(bias_categories[7:9],1,mean)
-bias_categories$group_id <- as.numeric(gsub("X","",bias_categories$group_id))
+bias_categories <- fread("bias_category_all_samples_inc_orig_expr.csv")
+bias_categories[,sample:=sub("^PXCS","PxCS",sub("_.*","",sample))]
+bias_categories <- bias_categories[!sample %in% c("PxCS1","PxCS2","PxCS3")]
+bias_categories[,group_id:=as.numeric(gsub("^X","",group_id))]
+bias_categories <- bias_categories %>% mutate(genotype=sub("[0-9]+$","",as.character(sample))) %>% group_by(group_id,genotype) %>% summarise(A_tpm=mean(A_tpm,na.rm=TRUE),B_tpm=mean(B_tpm,na.rm=TRUE),D_tpm=mean(D_tpm,na.rm=TRUE),.groups="drop") %>% mutate(triad_tpm=A_tpm+B_tpm+D_tpm,A=A_tpm/triad_tpm,B=B_tpm/triad_tpm,D=D_tpm/triad_tpm) %>% as.data.table()
+bias_categories[,CV:=apply(.SD,1,sd)/apply(.SD,1,mean),.SDcols=c("A","B","D")]
+bias_categories <- bias_categories[is.finite(CV)]
 
-homologies <- fread(file="homologies.csv")
-gbm_status <- fread("gene_body_methylation.tsv")
+homologies <- fread("homologies.csv")
+homologies[,group_id:=as.numeric(gsub("^X","",group_id))]
+hom_long <- melt(homologies,id.vars=c("group_id","cardinality","synteny","group","chrs","origin"),measure.vars=c("A","B","D"),variable.name="subgenome",value.name="gene_id")
 
-hom_long <- melt(homologies,id.vars = c("group_id","cardinality","synteny","group","chrs","origin"),measure.vars = c("A","B","D"),variable.name = "subgenome",value.name = "gene_id")
-gbm_simple <- gbm_status[,.(gene_id,genotype = sample,gbM_state = fifelse(gbM_candidate,"gbM","non-gbM"))]
-triad_gbm_long <- merge(hom_long,gbm_simple,by = "gene_id",all.x = TRUE)
-triad_gbm_wide <- dcast(triad_gbm_long,group_id + genotype ~ subgenome,value.var = "gbM_state")
-setnames(triad_gbm_wide,old = c("A","B","D"),new = c("A_gbM_state","B_gbM_state","D_gbM_state"))
-triad_gbm_wide[,triad_gbM_state := paste(A_gbM_state,B_gbM_state,D_gbM_state,sep = ", ")]
-bias_categories_gbm <- merge(bias_categories,triad_gbm_wide,by = c("group_id","genotype"),all.x = TRUE)
-bias_categories_gbm <- bias_categories_gbm[ !is.na(bias_categories_gbm$A_gbM_state) & !is.na(bias_categories_gbm$B_gbM_state) & !is.na(bias_categories_gbm$D_gbM_state), ]
-bias_categories_gbm$triad_gbM_state <- apply(bias_categories_gbm[,c("A_gbM_state","B_gbM_state","D_gbM_state")],1,function(x) if (sum(x == "gbM") == 3) "All gbM" else if (sum(x == "non-gbM") == 3) "All non-gbM" else paste0(sum(x == "gbM")," gbM + ",sum(x == "non-gbM")," non-gbM"))
-bias_categories_gbm$triad_gbM_state <- factor(bias_categories_gbm$triad_gbM_state,levels = c("All non-gbM","1 gbM + 2 non-gbM","2 gbM + 1 non-gbM","All gbM"))
+gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_candidate)]
+gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_candidate")
+gbm_status <- gbm_status[!is.na(CS) & !is.na(CSxP) & !is.na(P)]
+gbm_status <- gbm_status[CS==CSxP & CSxP==P]
+gbm_status <- gbm_status[,.(gene_id,gbM_state=fifelse(CS,"gbM","non-gbM"))]
 
-tuk <- HSD.test(aov(CV ~ triad_gbM_state,data = bias_categories_gbm),"triad_gbM_state",group = TRUE)
-letters_df <- data.frame(triad_gbM_state = rownames(tuk$groups),letters = tuk$groups$groups)
-label_df <- bias_categories_gbm %>% 
-  group_by(triad_gbM_state) %>% 
-  summarise(median_CV = median(CV,na.rm = TRUE),n = n(),.groups = "drop") %>% 
-  left_join(letters_df,by = "triad_gbM_state")
+triad_gbm_long <- merge(hom_long[,.(group_id,subgenome,gene_id)],gbm_status,by="gene_id")
+triad_gbm_wide <- dcast(triad_gbm_long,group_id~subgenome,value.var="gbM_state")
+triad_gbm_wide <- triad_gbm_wide[!is.na(A) & !is.na(B) & !is.na(D)]
+setnames(triad_gbm_wide,c("A","B","D"),c("A_gbM_state","B_gbM_state","D_gbM_state"))
+triad_gbm_wide[,n_gbM:=rowSums(.SD=="gbM"),.SDcols=c("A_gbM_state","B_gbM_state","D_gbM_state")]
+triad_gbm_wide[,triad_gbM_state:=fcase(n_gbM==0,"All non-gbM",n_gbM==1,"1 gbM + 2 non-gbM",n_gbM==2,"2 gbM + 1 non-gbM",n_gbM==3,"All gbM")]
+triad_gbm_wide[,triad_gbM_state:=factor(triad_gbM_state,levels=c("All non-gbM","1 gbM + 2 non-gbM","2 gbM + 1 non-gbM","All gbM"))]
 
-pdf(file="gbm_heb.pdf",height=2,width=4.8)
-ggplot(data = bias_categories_gbm,aes(x = triad_gbM_state,y = CV)) +
-  geom_boxplot(outlier.shape = 1,outlier.size = 1) +
-  geom_text(data = label_df,aes(x = triad_gbM_state,y = median_CV + 0.09,label = round(median_CV,2)),size = 2) +
-  geom_text(data = label_df,aes(x = triad_gbM_state,y = 1.8,label = letters),size = 4,fontface = "bold") +
-  geom_text(data = label_df,aes(x = triad_gbM_state,y = 2.03,label = paste0("n=",n)),size = 2.5) +
-  labs(x = "",y = "HEB") +
-  coord_flip(ylim = c(0,2.1),clip = "off") +
-  theme_bw(base_size = 12) +
-  theme(axis.title = element_text(face = "bold"),panel.grid.minor = element_blank(),plot.margin = margin(5.5,30,5.5,5.5))
+bias_categories_gbm <- merge(bias_categories,triad_gbm_wide[,.(group_id,triad_gbM_state)],by="group_id")
+bias_categories_gbm <- bias_categories_gbm[,.(CV=mean(CV,na.rm=TRUE),n_genotypes=uniqueN(genotype)),by=.(group_id,triad_gbM_state)]
+bias_categories_gbm <- bias_categories_gbm[n_genotypes==3]
+
+tuk <- HSD.test(aov(CV~triad_gbM_state,data=bias_categories_gbm),"triad_gbM_state",group=TRUE)
+letters_df <- data.frame(triad_gbM_state=rownames(tuk$groups),letters=tuk$groups$groups)
+label_df <- bias_categories_gbm %>% group_by(triad_gbM_state) %>% summarise(median_CV=median(CV,na.rm=TRUE),n=n_distinct(group_id),.groups="drop") %>% left_join(letters_df,by="triad_gbM_state")
+
+bias_categories_gbm_plot <- ggplot(bias_categories_gbm,aes(x=triad_gbM_state,y=CV)) +
+  geom_boxplot(outlier.shape=1,outlier.size=1) +
+  geom_text(data=label_df,aes(x=triad_gbM_state,y=median_CV+0.09,label=round(median_CV,2)),size=2) +
+  geom_text(data=label_df,aes(x=triad_gbM_state,y=1.8,label=letters),size=4,fontface="bold") +
+  geom_text(data=label_df,aes(x=triad_gbM_state,y=2.03,label=paste0("n=",n)),size=2.5) +
+  labs(x="",y="HEB") +
+  coord_flip(ylim=c(0,2.1),clip="off") +
+  theme_bw(base_size=12) +
+  theme(axis.title=element_text(face="bold"),panel.grid.minor=element_blank(),plot.margin=margin(5.5,30,5.5,5.5))
+
+
+## transgressive methylation
+
+library(data.table)
+library(ggplot2)
+
+gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_candidate)]
+stopifnot(all(gbm_status[, .N,by=.(gene_id,sample)]$N==1))
+gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_candidate")
+gbm_status <- gbm_status[!is.na(CS) & !is.na(CSxP) & !is.na(P)]
+gbm_status <- gbm_status[CS==P & P==CSxP]
+gbm_status[,gbM_status:=factor(ifelse(CS,"gbM","non-gbM"),levels=c("gbM","non-gbM"))]
+transgressive_genes <- fread("transgressive_genes.txt",header=FALSE)[,.(gene_id=V1,label="Transgressive")]
+dominant_genes <- fread("dominant_genes.txt",header=FALSE)[,.(gene_id=V1,label="Dominant")]
+additive_genes <- fread("additive_genes.txt",header=FALSE)[,.(gene_id=V1,label="Additive")]
+nonDE_genes <- fread("nonDE_genes.txt",header=FALSE)[,.(gene_id=V1,label="non-DE")]
+gene_class <- unique(rbindlist(list(transgressive_genes,dominant_genes,additive_genes,nonDE_genes)))
+gbm_status <- merge(gbm_status,gene_class,by="gene_id")
+gbm_status[,label:=factor(label,levels=c("Transgressive","Dominant","Additive","non-DE"))]
+tab <- table(gbm_status$gbM_status,gbm_status$label)
+print(tab)
+print(chisq.test(tab))
+gbm_status2 <- gbm_status[, .N,by=.(label,gbM_status)]
+gbm_status2[,prop:=N/sum(N),by=label]
+n_dt <- gbm_status[,.(n=.N),by=label]
+n_dt[,n_label:=paste0("n=",n)]
+print(gbm_status2)
+
+gbm_status2_plot <- ggplot(gbm_status2,aes(x=label,y=prop,fill=gbM_status)) +
+  geom_col(width=0.7) +
+  geom_text(data=n_dt,aes(x=label,y=0.9,label=n_label),inherit.aes=FALSE,size=4) +
+  scale_fill_manual(values=c("non-gbM"="grey70","gbM"="#0072B2")) +
+  labs(x="",y="Proportion of genes",fill="") +
+  theme_classic() +
+  theme(legend.position = "top")
+
+pdf(file="gbM_DE.pdf",height=2,width=10)
+plot_grid(plot_dt_plot,bias_categories_gbm_plot,gbm_status2_plot,ncol=3,labels="AUTO",rel_widths = c(0.8,2.1,1.7))
 dev.off()
+
