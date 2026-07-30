@@ -172,7 +172,7 @@ awk 'BEGIN{FS=OFS="\t"} $2~/^[0-9]+$/ && $3~/^[0-9]+$/ && $3==$2+1{chr=$1; sub(/
 
 ```
 
-20. Remove methylation sites with SNPs between CS and Paragon reference genomes. The classify sites based on inheritance categories. Classification scheme based on scripts developed by Asena: https://github.com/AsenaArdaman/Hybrid_inheritance_models.
+19. Remove methylation sites with SNPs between CS and Paragon reference genomes. The classify sites based on inheritance categories. Classification scheme based on scripts developed by Asena: https://github.com/AsenaArdaman/Hybrid_inheritance_models.
 ```
 (zcat merged_CG_symmetric_fullchr.txt.gz | head -n 1; zcat merged_CG_symmetric_fullchr.txt.gz | awk 'BEGIN{FS=OFS="\t"} FNR>1{print $1,$2-1,$2+1,$0}' | bedtools intersect -sorted -a - -b cs_par_all_snps.bed -v | cut -f4-) | gzip -c > merged_CG_symmetric_all.txt.gz
 
@@ -186,9 +186,9 @@ Rscript boman_classification_chh.R
 
 ```
 
-21. Convert IWGSC v1.1 gene annotation into BED files for CDS for the longest transcript and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs using [`bed_intervals.sh`](./bed_intervals.sh)
+20. Convert IWGSC v1.1 gene annotation into BED files for CDS for the longest transcript and 1 kb promoter regions, while replacing v1.1 gene IDs with their high-confidence v2.1 gene IDs using [`bed_intervals.sh`](./bed_intervals.sh)
 
-22. Subset CDS regions from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
+21. Subset CDS regions from methylation sites. Remove any duplicate positions. Data available on https://doi.org/10.6084/m9.figshare.32144041.
 ```
 (printf "chr\tpos\tpct_CS\tcov_CS\tpct_CSxP\tcov_CSxP\tpct_P\tcov_P\tgene_id\n"; zcat merged_CG_symmetric_all.txt.gz | awk 'BEGIN{FS=OFS="\t"} NR>1{print $1,$2-1,$2,$0}' | bedtools intersect -a stdin -b CDS.bed  -wa -wb | awk 'BEGIN{FS=OFS="\t"}{print $4,$5,$6,$7,$8,$9,$10,$11,$15}') | gzip > merged_CG_symmetric_CDS.txt.gz
 zcat merged_CG_symmetric_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp && mv tmp merged_CG_symmetric_CDS.txt.gz
@@ -203,5 +203,5 @@ zcat merged_CHH_all_CDS.txt.gz | awk 'NR==1 || !seen[$1 FS $2]++' | gzip > tmp &
 #python3 subset_chh_by_cds.py CDS.bed merged_CHH_all.txt.gz merged_CHH_all_CDS.txt.gz
 ```
 
-23. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R) and [`gbM_wheat.R`](./gbM_wheat.R)
+22. Plot methylation results using [`boman_classification_gene.R`](./boman_classification_gene.R) and [`gbM_wheat.R`](./gbM_wheat.R)
 
