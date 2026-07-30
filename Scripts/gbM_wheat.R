@@ -70,6 +70,19 @@ gbm_status <- gbm_status[!is.na(CS) & !is.na(CSxP) & !is.na(P)]
 gbm_status <- gbm_status[CS==CSxP & CSxP==P]
 gbm_status[,gbM_status:=factor(ifelse(CS,"gbM","non-gbM"),levels=c("non-gbM","gbM"))]
 gbm_status <- gbm_status[,.(gene_id,gbM_status)]
+gbm_subgenome <- gbm_status
+gbm_subgenome[,subgenome:=sub("^TraesCS[0-9]+([ABD]).*$","\\1",gene_id)]
+gbm_subgenome[,subgenome:=factor(subgenome,levels=c("A","B","D"))]
+
+tab_subgenome <- table(gbm_subgenome$subgenome,gbm_subgenome$gbM_status)
+print(tab_subgenome)
+print(prop.table(tab_subgenome,margin=1))
+print(chisq.test(tab_subgenome))
+
+gbm_subgenome_summary <- gbm_subgenome[,.(n_genes=.N,n_gbM=sum(gbM_status=="gbM"),prop_gbM=mean(gbM_status=="gbM")),by=subgenome]
+print(gbm_subgenome_summary)
+
+
 plot_dt <- merge(tpm_long,gbm_status,by="gene_id")
 plot_dt[,genotype:=factor(genotype,levels=c("CS","CSxP","P"))]
 plot_dt[,log2_TPM:=log2(TPM+1)]
@@ -173,7 +186,7 @@ gbm_status2_plot <- ggplot(gbm_status2,aes(x=label,y=prop,fill=gbM_status)) +
   theme_classic() +
   theme(legend.position = "top")
 
-pdf(file="gbM_DE.pdf",height=2,width=10)
-plot_grid(plot_dt_plot,bias_categories_gbm_plot,gbm_status2_plot,ncol=3,labels="AUTO",rel_widths = c(0.8,2.1,1.7))
+pdf(file="gbM_DE.pdf",height=4,width=5.5)
+plot_grid(plot_grid(plot_dt_plot,gbm_status2_plot,ncol=2,labels=c("A","C"),rel_widths=c(0.8,1.7)),bias_categories_gbm_plot,ncol=1,labels=c("","B"),rel_heights = c(1.5,1))
 dev.off()
 
