@@ -1,8 +1,8 @@
-
 library(data.table)
 library(dplyr)
 library(ggplot2)
 library(scales)
+library(cowplot)
 
 ## identify gbM genes
 
@@ -17,12 +17,15 @@ test_gbM <- function(file, context_name, remove_col3 = FALSE) {
   for (sample_name in samples) {
     pct_col <- paste0("pct_", sample_name)
     cov_col <- paste0("cov_", sample_name)
-    x <- dt
+    x <- dt[!is.na(get(cov_col)) & get(cov_col) > 2]
     x$meth_count <- round((x[[pct_col]] / 100) * x[[cov_col]])
     x$total_count <- x[[cov_col]]
-    genome_p <- sum(x$meth_count, na.rm = TRUE) / sum(x$total_count, na.rm = TRUE)
-    gene_summary <- x[,list(sites = .N,nC = sum(total_count, na.rm = TRUE),mC = sum(meth_count, na.rm = TRUE)),by = gene_id]
-    gene_summary <- gene_summary[nC >= 10]
+    x$site_p_value <- pbinom(q = x$meth_count - 1,size = x$total_count,prob = 0.002,lower.tail = FALSE)
+    x$site_padj <- p.adjust(x$site_p_value,method="BH")
+    x$site_methylated <- x$site_padj < 0.001
+    genome_p <- mean(x$site_methylated)
+    gene_summary <- x[,list(sites = .N,nC = .N,mC = sum(site_methylated)),by = gene_id]
+    gene_summary <- gene_summary[sites >= 20]
     gene_summary$sample <- sample_name
     gene_summary$context <- context_name
     gene_summary$genome_p <- genome_p
@@ -41,11 +44,10 @@ chh_results <- test_gbM(file = "merged_CHH_all_CDS.txt.gz",context_name = "CHH",
 
 all_results <- rbind(cg_results, chg_results, chh_results)
 all_results <- dcast(all_results, gene_id + sample ~ context, value.var = c("sites", "nC", "mC", "gene_methylation_level", "genome_p", "p_value", "padj", "context_candidate"))
-all_results <- all_results %>%
-  group_by(gene_id) %>%
-  filter(all(sites_CG > 5), all(sites_CHG > 5),all(sites_CHH > 5)) %>%
-  ungroup()
-all_results$gbM_candidate <- all_results$context_candidate_CG == TRUE &all_results$context_candidate_CHG == FALSE &all_results$context_candidate_CHH == FALSE
+all_results <- all_results[!is.na(padj_CG) & !is.na(padj_CHG) & !is.na(padj_CHH)]
+all_results$gbM_candidate <- all_results$padj_CG <= 0.05 & all_results$padj_CHG > 0.05 & all_results$padj_CHH > 0.05
+all_results$gbM_class <- ifelse(all_results$gbM_candidate == TRUE,"gbM",ifelse(all_results$padj_CG > 0.05 & all_results$padj_CHG > 0.05 & all_results$padj_CHH > 0.05,"UM",NA))
+all_results <- all_results[!is.na(all_results$gbM_class),]
 all_results <- all_results[, -c(18:20, 24:26), with = FALSE]
 fwrite(all_results, "gene_body_methylation.tsv", sep = "\t")
 
@@ -59,16 +61,16 @@ cs_tpm <- read.table(file="cs_tpm.tsv")
 cs_tpm <- as.data.table(cs_tpm,keep.rownames="gene_id")
 cs_tpm <- cs_tpm[!grepl("LC$",gene_id)]
 colnames(cs_tpm) <- c("gene_id",sub("^PXCS","PxCS",sub("_.*","",colnames(cs_tpm)[-1])))
+cs_tpm <- cs_tpm[,c("gene_id","CS1","CS2","CS3","CSxP1","CSxP2","CSxP3","P1","P2","P3"),with=FALSE]
 sample_cols <- colnames(cs_tpm)[-1]
 cs_tpm <- cs_tpm[rowSums(as.data.frame(cs_tpm)[,sample_cols]>=1)>=3]
-cs_tpm <- cs_tpm[,1:10]
 tpm_gene <- data.table(gene_id=cs_tpm$gene_id,CS=rowMeans(cs_tpm[,c("CS1","CS2","CS3"),with=FALSE],na.rm=TRUE),CSxP=rowMeans(cs_tpm[,c("CSxP1","CSxP2","CSxP3"),with=FALSE],na.rm=TRUE),P=rowMeans(cs_tpm[,c("P1","P2","P3"),with=FALSE],na.rm=TRUE))
 tpm_long <- melt(tpm_gene,id.vars="gene_id",variable.name="genotype",value.name="TPM")
-gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_candidate)]
-gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_candidate")
+gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_class)]
+gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_class")
 gbm_status <- gbm_status[!is.na(CS) & !is.na(CSxP) & !is.na(P)]
 gbm_status <- gbm_status[CS==CSxP & CSxP==P]
-gbm_status[,gbM_status:=factor(ifelse(CS,"gbM","non-gbM"),levels=c("non-gbM","gbM"))]
+gbm_status[,gbM_status:=factor(CS,levels=c("UM","gbM"))]
 gbm_status <- gbm_status[,.(gene_id,gbM_status)]
 gbm_subgenome <- gbm_status
 gbm_subgenome[,subgenome:=sub("^TraesCS[0-9]+([ABD]).*$","\\1",gene_id)]
@@ -82,7 +84,6 @@ print(chisq.test(tab_subgenome))
 gbm_subgenome_summary <- gbm_subgenome[,.(n_genes=.N,n_gbM=sum(gbM_status=="gbM"),prop_gbM=mean(gbM_status=="gbM")),by=subgenome]
 print(gbm_subgenome_summary)
 
-
 plot_dt <- merge(tpm_long,gbm_status,by="gene_id")
 plot_dt[,genotype:=factor(genotype,levels=c("CS","CSxP","P"))]
 plot_dt[,log2_TPM:=log2(TPM+1)]
@@ -93,8 +94,8 @@ wilcox_p <- wilcox.test(log2_TPM~gbM_status,data=plot_dt)$p.value
 plot_dt_plot <- ggplot(plot_dt,aes(x=gbM_status,y=log2_TPM,fill=gbM_status)) +
   geom_boxplot(outlier.size=0.2,linewidth=0.3) +
   geom_text(data=median_labs,aes(x=gbM_status,y=median_log2_TPM,label=label),inherit.aes=FALSE,size=3,vjust=-0.4) +
-  geom_text(data=data.frame(x=1.5,y=15),aes(x=x,y=y,label=paste0("italic(P)~'='~",signif(wilcox_p,3))),inherit.aes=FALSE,size=4,parse=TRUE) +
-  scale_fill_manual(values=c("non-gbM"="grey70","gbM"="#0072B2")) +
+  geom_text(data=data.frame(x=1.5,y=13.5),aes(x=x,y=y,label=paste0("italic(P)~'='~",signif(wilcox_p,3))),inherit.aes=FALSE,size=2.5,parse=TRUE) +
+  scale_fill_manual(values=c("UM"="grey70","gbM"="#0072B2")) +
   labs(x=NULL,y=expression(log[2]*"(TPM+1)"),fill=NULL) +
   theme_bw(base_size=12) +
   theme(panel.grid.minor=element_blank(),panel.grid.major=element_line(linewidth=0.2,colour="grey90"),strip.background=element_rect(fill="white",colour="black"),legend.position="none",axis.title=element_text(face="bold"))
@@ -118,19 +119,19 @@ homologies <- fread("homologies.csv")
 homologies[,group_id:=as.numeric(gsub("^X","",group_id))]
 hom_long <- melt(homologies,id.vars=c("group_id","cardinality","synteny","group","chrs","origin"),measure.vars=c("A","B","D"),variable.name="subgenome",value.name="gene_id")
 
-gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_candidate)]
-gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_candidate")
+gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_class)]
+gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_class")
 gbm_status <- gbm_status[!is.na(CS) & !is.na(CSxP) & !is.na(P)]
 gbm_status <- gbm_status[CS==CSxP & CSxP==P]
-gbm_status <- gbm_status[,.(gene_id,gbM_state=fifelse(CS,"gbM","non-gbM"))]
+gbm_status <- gbm_status[,.(gene_id,gbM_state=CS)]
 
 triad_gbm_long <- merge(hom_long[,.(group_id,subgenome,gene_id)],gbm_status,by="gene_id")
 triad_gbm_wide <- dcast(triad_gbm_long,group_id~subgenome,value.var="gbM_state")
 triad_gbm_wide <- triad_gbm_wide[!is.na(A) & !is.na(B) & !is.na(D)]
 setnames(triad_gbm_wide,c("A","B","D"),c("A_gbM_state","B_gbM_state","D_gbM_state"))
 triad_gbm_wide[,n_gbM:=rowSums(.SD=="gbM"),.SDcols=c("A_gbM_state","B_gbM_state","D_gbM_state")]
-triad_gbm_wide[,triad_gbM_state:=fcase(n_gbM==0,"All non-gbM",n_gbM==1,"1 gbM + 2 non-gbM",n_gbM==2,"2 gbM + 1 non-gbM",n_gbM==3,"All gbM")]
-triad_gbm_wide[,triad_gbM_state:=factor(triad_gbM_state,levels=c("All non-gbM","1 gbM + 2 non-gbM","2 gbM + 1 non-gbM","All gbM"))]
+triad_gbm_wide[,triad_gbM_state:=fcase(n_gbM==0,"All UM",n_gbM==1,"1 gbM + 2 UM",n_gbM==2,"2 gbM + 1 UM",n_gbM==3,"All gbM")]
+triad_gbm_wide[,triad_gbM_state:=factor(triad_gbM_state,levels=c("All UM","1 gbM + 2 UM","2 gbM + 1 UM","All gbM"))]
 
 bias_categories_gbm <- merge(bias_categories,triad_gbm_wide[,.(group_id,triad_gbM_state)],by="group_id")
 bias_categories_gbm <- bias_categories_gbm[,.(CV=mean(CV,na.rm=TRUE),n_genotypes=uniqueN(genotype)),by=.(group_id,triad_gbM_state)]
@@ -156,12 +157,12 @@ bias_categories_gbm_plot <- ggplot(bias_categories_gbm,aes(x=triad_gbM_state,y=C
 library(data.table)
 library(ggplot2)
 
-gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_candidate)]
+gbm_status <- fread("gene_body_methylation.tsv")[,.(gene_id,sample,gbM_class)]
 stopifnot(all(gbm_status[, .N,by=.(gene_id,sample)]$N==1))
-gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_candidate")
+gbm_status <- dcast(gbm_status,gene_id~sample,value.var="gbM_class")
 gbm_status <- gbm_status[!is.na(CS) & !is.na(CSxP) & !is.na(P)]
 gbm_status <- gbm_status[CS==P & P==CSxP]
-gbm_status[,gbM_status:=factor(ifelse(CS,"gbM","non-gbM"),levels=c("gbM","non-gbM"))]
+gbm_status[,gbM_status:=factor(CS,levels=c("gbM","UM"))]
 transgressive_genes <- fread("transgressive_genes.txt",header=FALSE)[,.(gene_id=V1,label="Transgressive")]
 dominant_genes <- fread("dominant_genes.txt",header=FALSE)[,.(gene_id=V1,label="Dominant")]
 additive_genes <- fread("additive_genes.txt",header=FALSE)[,.(gene_id=V1,label="Additive")]
@@ -180,13 +181,13 @@ print(gbm_status2)
 
 gbm_status2_plot <- ggplot(gbm_status2,aes(x=label,y=prop,fill=gbM_status)) +
   geom_col(width=0.7) +
-  geom_text(data=n_dt,aes(x=label,y=0.9,label=n_label),inherit.aes=FALSE,size=4) +
-  scale_fill_manual(values=c("non-gbM"="grey70","gbM"="#0072B2")) +
+  geom_text(data=n_dt,aes(x=label,y=0.9,label=n_label),inherit.aes=FALSE,size=3) +
+  scale_fill_manual(values=c("UM"="grey70","gbM"="#0072B2")) +
   labs(x="",y="Proportion of genes",fill="") +
   theme_classic() +
   theme(legend.position = "top")
 
-pdf(file="gbM_DE.pdf",height=4,width=5.5)
-plot_grid(plot_grid(plot_dt_plot,gbm_status2_plot,ncol=2,labels=c("A","C"),rel_widths=c(0.8,1.7)),bias_categories_gbm_plot,ncol=1,labels=c("","B"),rel_heights = c(1.5,1))
+pdf(file="gbM_DE.pdf",height=3.5,width=5)
+plot_grid(plot_grid(plot_dt_plot,gbm_status2_plot,ncol=2,labels=c("A","C"),rel_widths=c(0.65,1.7)),bias_categories_gbm_plot,ncol=1,labels=c("","B"),rel_heights = c(1.7,1))
 dev.off()
 
