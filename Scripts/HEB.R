@@ -283,10 +283,17 @@ bias_distance_plot <- ggplot(bc2 %>% filter(!is.na(n_hits),n_hits>0),aes(x=dist_
 
 ## check if bias distance between parents differs between DE genes vs non DE genes, boxplot
 
-bc_plot_plot <- ggplot(data = (bc2 %>% filter(!is.na(n_hits)) %>% mutate(n_hits_f = factor(n_hits))), aes(x = n_hits_f, y = dist_CS_P)) +
+bc3 <- bc2 %>%
+  filter(!is.na(n_hits)) %>%
+  mutate(n_hits_f=factor(n_hits)) %>%
+  select(n_hits_f,dist_CS_P=dist_CS_P,group_id) %>%
+  distinct()
+
+bc_plot_plot <- ggplot(data = bc3, aes(x = n_hits_f, y = dist_CS_P)) +
   geom_boxplot(fill = "#69b3a2", color = "black", outlier.shape = 16, outlier.size = 1.5) +
   stat_summary(fun = median, geom = "text",aes(label = sprintf("%.2f", after_stat(y))),vjust = -0.5, size = 3.3) +
-  geom_text(data = HSD.test(aov(dist_CS_P ~ n_hits_f, data = (bc2 %>% filter(!is.na(n_hits)) %>% mutate(n_hits_f = factor(n_hits)))), "n_hits_f", group = TRUE)$groups %>% rownames_to_column("n_hits_f") %>% as_tibble(), aes(n_hits_f, y = 1.15, label = groups),vjust = -0.2, size = 4, fontface = "bold") +
+  geom_text(data = bc3 %>% count(n_hits_f),aes(x = n_hits_f, y = 1.15, label = paste0("n=",n)),inherit.aes = FALSE,size = 3.3) +
+  geom_text(data = HSD.test(aov(dist_CS_P ~ n_hits_f, data = bc3), "n_hits_f", group = TRUE)$groups %>% rownames_to_column("n_hits_f") %>% as_tibble(), aes(n_hits_f, y = 1.2, label = groups),vjust = -0.2, size = 4, fontface = "bold") +
   labs(x = "Number of DE homoeologs",y = "Parental bias difference") +
   theme_minimal(base_size = 13) +
   ylim(0,1.25)
