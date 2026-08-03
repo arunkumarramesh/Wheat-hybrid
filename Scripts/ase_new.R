@@ -120,14 +120,6 @@ hybrid_counts <- hybrid_counts %>%
   select(gene, ends_with("_ref"), ends_with("_alt"))
 rownames(hybrid_counts) <- hybrid_counts$gene
 hybrid_counts <- hybrid_counts[-c(1)]
-hybrid_counts <- hybrid_counts %>%
-  filter(
-    CSxP1_ref + CSxP1_alt > 0,
-    CSxP2_ref + CSxP2_alt > 0,
-    CSxP3_ref + CSxP3_alt > 0,
-    PxCS1_ref + PxCS1_alt > 0,
-    PxCS2_ref + PxCS2_alt > 0
-  )
 
 ratio_df <- hybrid_counts %>%
   mutate(gene = rownames(.)) %>%
@@ -182,7 +174,8 @@ dev.off()
 sample_info.edger <- factor(c(rep("ref", 5), rep("alt", 5)))
 hybrid_counts <- hybrid_counts[!rownames(hybrid_counts) %in% rownames(ref_reciprocal_sig),]
 edgeR.DGElist <- DGEList(counts = hybrid_counts, group = sample_info.edger)
-keep <- rowSums(cpm(edgeR.DGElist) >= 2) >= 4
+total_counts <- hybrid_counts[, 1:5] + hybrid_counts[, 6:10]
+keep <- rowSums( cpm(DGEList(total_counts)) >= 2 ) >= 4
 edgeR.DGElist <- edgeR.DGElist[keep,]
 
 total_counts <- hybrid_counts[1:5] + hybrid_counts[6:10]
